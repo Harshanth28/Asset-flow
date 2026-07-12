@@ -1,34 +1,36 @@
 import React, { useEffect, useState } from 'react';
-import { getDbTable, type MockAsset, type MockUser } from '../utils/mockDb';
+import api from '../utils/api';
 import { History, Search, Clock, User } from 'lucide-react';
+
+interface LogUser {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+}
 
 interface LogEntry {
   id: string;
-  userId?: string;
+  userId: string;
   assetId?: string;
-  action: string; // e.g. "REGISTER", "ALLOCATE", "MAINTENANCE_START", "AUDIT_FAIL"
+  action: string;
   details: string;
   createdAt: string;
+  user: LogUser;
 }
 
 export const Logs: React.FC = () => {
   const [logsList, setLogsList] = useState<LogEntry[]>([]);
-  const [assets, setAssets] = useState<MockAsset[]>([]);
-  const [users, setUsers] = useState<MockUser[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
-    // Load data from mock database
-    setLogsList(getDbTable<LogEntry>('af_logs'));
-    setAssets(getDbTable<MockAsset>('af_assets'));
-    setUsers(getDbTable<MockUser>('af_users'));
+    api.get<LogEntry[]>('/logs')
+      .then((res) => setLogsList(res.data))
+      .catch((err) => console.error('Failed to fetch logs:', err));
   }, []);
 
   const filteredLogs = logsList.filter(log => {
-    const asset = assets.find(a => a.id === log.assetId);
-    const userObj = users.find(u => u.id === log.userId);
-    
-    const searchString = `${log.action} ${log.details} ${asset ? asset.tag : ''} ${userObj ? userObj.name : ''}`.toLowerCase();
+    const searchString = `${log.action} ${log.details} ${log.user?.name ?? ''}`.toLowerCase();
     return searchString.includes(searchQuery.toLowerCase());
   });
 
@@ -82,7 +84,6 @@ export const Logs: React.FC = () => {
                 </tr>
               ) : (
                 filteredLogs.map(log => {
-                  const operator = users.find(u => u.id === log.userId);
                   return (
                     <tr key={log.id} className="hover:bg-accent/10">
                       <td className="py-4 text-muted-foreground font-medium flex items-center gap-1.5">
@@ -104,7 +105,7 @@ export const Logs: React.FC = () => {
                       </td>
                       <td className="py-4 text-muted-foreground font-medium flex items-center gap-1.5">
                         <User size={12} />
-                        <span>{operator ? operator.name : 'System Scheduler'}</span>
+                        <span>{log.user ? log.user.name : 'System Scheduler'}</span>
                       </td>
                       <td className="py-4 text-foreground font-semibold leading-relaxed">
                         {log.details}
