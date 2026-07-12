@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppSelector } from '../store';
-import { getDbTable, saveDbTable, type MockAsset, type MockAllocation, type MockBooking, type MockMaintenance, type MockUser, type MockTransfer } from '../utils/mockDb';
+import api from '../utils/api';
 import { 
   Folder, 
   CheckCircle2, 
@@ -23,6 +23,49 @@ import {
   ChevronUp
 } from 'lucide-react';
 
+interface KpiMetrics {
+  assetsAvailable: number;
+  assetsAllocated: number;
+  maintenanceToday: number;
+  activeBookings: number;
+  pendingTransfers: number;
+  upcomingReturns: number;
+  overdueReturns: number;
+}
+
+interface OverdueItem {
+  id: string;
+  assetTag: string;
+  assetName: string;
+  holderName: string;
+  expectedReturn: string;
+  daysOverdue: number;
+}
+
+interface EmployeeAllocation {
+  id: string;
+  tag: string;
+  name: string;
+  condition: string;
+  expectedReturn: string;
+}
+
+interface BookingItem {
+  id: string;
+  assetName: string;
+  bookerName: string;
+  date: string;
+  time: string;
+  status: string;
+}
+
+interface LogItem {
+  id: string;
+  action: string;
+  details: string;
+  createdAt: string;
+}
+
 export const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { user, activeRole } = useAppSelector((state) => state.auth);
@@ -39,10 +82,10 @@ export const Dashboard: React.FC = () => {
     overdueReturns: 0,
   });
 
-  const [overdueList, setOverdueList] = useState<any[]>([]);
-  const [employeeAllocations, setEmployeeAllocations] = useState<any[]>([]);
-  const [recentBookings, setRecentBookings] = useState<any[]>([]);
-  const [recentLogs, setRecentLogs] = useState<any[]>([]);
+  const [overdueList, setOverdueList] = useState<OverdueItem[]>([]);
+  const [employeeAllocations, setEmployeeAllocations] = useState<EmployeeAllocation[]>([]);
+  const [recentBookings, setRecentBookings] = useState<BookingItem[]>([]);
+  const [recentLogs, setRecentLogs] = useState<LogItem[]>([]);
 
   // Interactivity states
   const [isOverdueExpanded, setIsOverdueExpanded] = useState(false);
@@ -50,121 +93,72 @@ export const Dashboard: React.FC = () => {
 
   const handleSendReminder = (e: React.MouseEvent, holderName: string, assetName: string) => {
     e.stopPropagation();
-    
-    // Save to activity log
-    const logs = getDbTable<any>('af_logs');
-    logs.unshift({
+
+    const newLog: LogItem = {
       id: `log-remind-${Date.now()}`,
       action: 'FOLLOW_UP_REMINDER',
       details: `Dispatched return notification reminder to ${holderName} for ${assetName}.`,
       createdAt: new Date().toISOString()
-    });
-    saveDbTable('af_logs', logs);
+    };
 
-    // Refresh logs on dashboard
-    setRecentLogs(logs.slice(0, 4));
-
+    setRecentLogs(prev => [newLog, ...prev].slice(0, 4));
     setReminderStatus(`Reminder sent to ${holderName}!`);
     setTimeout(() => setReminderStatus(null), 3000);
   };
 
   useEffect(() => {
-    // 1. Fetch tables from Local MockDB
-    const assets = getDbTable<MockAsset>('af_assets');
-    const allocations = getDbTable<MockAllocation>('af_allocations');
-    const bookings = getDbTable<MockBooking>('af_bookings');
-    const maintenance = getDbTable<MockMaintenance>('af_maintenance');
-    const users = getDbTable<MockUser>('af_users');
-    const transfers = getDbTable<MockTransfer>('af_transfers');
-
-    // 2. Compute KPI Metrics
-    const activeAllocations = allocations.filter(a => a.status === 'ACTIVE');
-    const pendingTransfers = transfers.filter(t => t.status === 'PENDING');
-    const activeBookings = bookings.filter(b => b.status === 'ONGOING' || b.status === 'UPCOMING');
-    const activeMaintenance = maintenance.filter(m => m.status !== 'RESOLVED' && m.status !== 'REJECTED');
-
-    const todayStr = new Date().toISOString().split('T')[0];
-    const today = new Date(todayStr);
-
-    let overdue = 0;
-    let upcoming = 0;
-    const overduesTemp: any[] = [];
-
-    activeAllocations.forEach(alloc => {
-      if (alloc.expectedReturnDate) {
-        const expDate = new Date(alloc.expectedReturnDate);
-        const timeDiff = expDate.getTime() - today.getTime();
-        const daysDiff = Math.ceil(timeDiff / (1000 * 3600 * 24));
-        
-        if (daysDiff < 0) {
-          overdue += 1;
-          const asset = assets.find(a => a.id === alloc.assetId);
-          const holder = users.find(u => u.id === alloc.userId);
-          if (asset) {
-            overduesTemp.push({
-              id: alloc.id,
-              assetTag: asset.tag,
-              assetName: asset.name,
-              holderName: holder ? holder.name : 'Unknown',
-              expectedReturn: alloc.expectedReturnDate,
-              daysOverdue: Math.abs(daysDiff)
-            });
-          }
-        } else if (daysDiff >= 0 && daysDiff <= 7) {
-          upcoming += 1;
-        }
-      }
-    });
-
-    setOverdueList(overduesTemp);
-
-    setMetrics({
-      total: assets.length,
-      available: assets.filter(a => a.status === 'AVAILABLE').length,
-      allocated: assets.filter(a => a.status === 'ALLOCATED').length,
-      maintenance: activeMaintenance.length,
-      bookings: activeBookings.length,
-      transfers: pendingTransfers.length,
-      upcomingReturns: upcoming,
-      overdueReturns: overdue,
-    });
-
-    // 3. Compute active allocations for currently logged in employee
-    if (activeRole === 'EMPLOYEE' && user) {
-      const myAllocs = activeAllocations
-        .filter(a => a.userId === user.id || a.userId === 'seed-employee') // Check both dynamic and seed id
-        .map(alloc => {
-          const asset = assets.find(a => a.id === alloc.assetId);
-          return {
-            id: alloc.id,
-            tag: asset ? asset.tag : 'AF-0000',
-            name: asset ? asset.name : 'Unknown Device',
-            condition: asset ? asset.condition : 'Good',
-            expectedReturn: alloc.expectedReturnDate || 'N/A'
-          };
+    const fetchData = async () => {
+      try {
+        const kpiRes = await api.get<KpiMetrics>('/dashboard/kpis');
+        const k = kpiRes.data;
+        setMetrics({
+          total: k.assetsAvailable + k.assetsAllocated + k.maintenanceToday,
+          available: k.assetsAvailable,
+          allocated: k.assetsAllocated,
+          maintenance: k.maintenanceToday,
+          bookings: k.activeBookings,
+          transfers: k.pendingTransfers,
+          upcomingReturns: k.upcomingReturns,
+          overdueReturns: k.overdueReturns,
         });
-      setEmployeeAllocations(myAllocs);
-    }
+      } catch (err) {
+        console.error('Failed to fetch KPI metrics', err);
+      }
 
-    // 4. Fetch list of upcoming bookings with details
-    const mappedBookings = activeBookings.map(b => {
-      const asset = assets.find(a => a.id === b.assetId);
-      const booker = users.find(u => u.id === b.userId);
-      return {
-        id: b.id,
-        assetName: asset ? asset.name : 'Shared Room',
-        bookerName: booker ? booker.name : 'Employee',
-        date: b.date,
-        time: `${b.startTime} - ${b.endTime}`,
-        status: b.status
-      };
-    });
-    setRecentBookings(mappedBookings);
+      try {
+        const overdueRes = await api.get<OverdueItem[]>('/allocations/overdue');
+        setOverdueList(overdueRes.data);
+      } catch (err) {
+        console.error('Failed to fetch overdue allocations', err);
+      }
 
-    // 5. Fetch recent activity logs
-    const logs = getDbTable<any>('af_logs');
-    setRecentLogs(logs.slice(0, 4));
+      try {
+        if (activeRole === 'EMPLOYEE' && user) {
+          const allocRes = await api.get<EmployeeAllocation[]>('/allocations', {
+            params: { employeeId: user.id }
+          });
+          setEmployeeAllocations(allocRes.data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch employee allocations', err);
+      }
 
+      try {
+        const bookingsRes = await api.get<BookingItem[]>('/bookings/my');
+        setRecentBookings(bookingsRes.data);
+      } catch (err) {
+        console.error('Failed to fetch bookings', err);
+      }
+
+      try {
+        const logsRes = await api.get<LogItem[]>('/logs');
+        setRecentLogs(logsRes.data.slice(0, 4));
+      } catch (err) {
+        console.error('Failed to fetch activity logs', err);
+      }
+    };
+
+    fetchData();
   }, [activeRole, user]);
 
   return (
@@ -302,7 +296,9 @@ export const Dashboard: React.FC = () => {
             </div>
           )}
         </div>
-      )}      {/* Layout Columns */}
+      )}
+
+      {/* Layout Columns */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Left/Middle Column (Main Content depending on Role) */}
