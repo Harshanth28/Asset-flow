@@ -19,7 +19,7 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   useEffect(() => {
     // If authenticated, connect to the Socket.IO server
     if (isAuthenticated && token) {
-      const serverUrl = import.meta.env.VITE_WS_URL || 'http://localhost:3001';
+      const serverUrl = import.meta.env.VITE_WS_URL || 'http://localhost:3000';
       
       const socket = io(serverUrl, {
         auth: {
