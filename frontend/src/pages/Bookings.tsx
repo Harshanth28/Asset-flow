@@ -1,27 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { useAppSelector } from '../store';
-import { getDbTable, saveDbTable, type MockAsset, type MockBooking, type MockUser } from '../utils/mockDb';
+import api from '../utils/api';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import { 
-  Calendar as CalendarIcon, 
-  Clock, 
-  AlertTriangle, 
-  Check, 
-  X, 
-  Plus, 
-  MapPin 
+import {
+  Calendar as CalendarIcon,
+  Clock,
+  AlertTriangle,
+  Check,
+  X,
+  Plus,
+  MapPin
 } from 'lucide-react';
 
 export const Bookings: React.FC = () => {
   const { user } = useAppSelector((state) => state.auth);
 
-  // Database lists
-  const [resources, setResources] = useState<MockAsset[]>([]);
-  const [bookings, setBookings] = useState<MockBooking[]>([]);
-  const [users, setUsers] = useState<MockUser[]>([]);
+  // Data states
+  const [resources, setResources] = useState<any[]>([]);
+  const [bookings, setBookings] = useState<any[]>([]);
+  const [myBookingList, setMyBookingList] = useState<any[]>([]);
 
   // Selection states
   const [selectedResourceId, setSelectedResourceId] = useState('');
@@ -37,48 +37,55 @@ export const Bookings: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Load database tables
-  const loadTables = () => {
-    const assets = getDbTable<MockAsset>('af_assets');
-    // Filter only assets marked as bookable shared resources
-    const bookableResources = assets.filter(a => a.isBookable);
-    
-    setResources(bookableResources);
-    setBookings(getDbTable<MockBooking>('af_bookings'));
-    setUsers(getDbTable<MockUser>('af_users'));
-
-    // Select first resource by default if none is active
-    if (bookableResources.length > 0 && !selectedResourceId) {
-      setSelectedResourceId(bookableResources[0].id);
-    }
-  };
-
+  // Initial data fetch
   useEffect(() => {
-    loadTables();
+    api.get('/assets', { params: { isBookable: true } })
+      .then((res) => {
+        const bookableResources = res.data;
+        setResources(bookableResources);
+        if (bookableResources.length > 0 && !selectedResourceId) {
+          setSelectedResourceId(bookableResources[0].id);
+        }
+      })
+      .catch((err) => {
+        setError(err.response?.data?.message || 'Failed to load resources.');
+      });
+
+    api.get('/bookings/my')
+      .then((res) => setMyBookingList(res.data))
+      .catch(() => {});
   }, []);
 
-  // Update calendar events when selected resource changes
+  // Fetch bookings for selected resource
   useEffect(() => {
     if (!selectedResourceId) return;
 
-    const resourceBookings = bookings.filter(
-      b => b.assetId === selectedResourceId && b.status !== 'CANCELLED'
+    api.get(`/bookings/asset/${selectedResourceId}`)
+      .then((res) => setBookings(res.data))
+      .catch(() => setBookings([]));
+  }, [selectedResourceId]);
+
+  // Map bookings to calendar events
+  useEffect(() => {
+    if (!selectedResourceId) return;
+
+    const activeBookings = bookings.filter(
+      (b: any) => b.status !== 'CANCELLED'
     );
 
-    const mappedEvents = resourceBookings.map(b => {
-      const booker = users.find(u => u.id === b.userId);
+    const mappedEvents = activeBookings.map((b: any) => {
+      const isMine = user ? b.userId === user.id : false;
       return {
         id: b.id,
-        title: booker ? `Booked by ${booker.name}` : 'Reserved',
-        // Combine date and time for FullCalendar: ISO string "YYYY-MM-DDTHH:MM:SS"
-        start: `${b.date}T${b.startTime}:00`,
-        end: `${b.date}T${b.endTime}:00`,
-        color: b.userId === (user ? user.id : 'emp-4') ? '#00e5ff' : '#475569',
+        title: isMine ? 'My Booking' : 'Booked',
+        start: b.startTime,
+        end: b.endTime,
+        color: isMine ? '#00e5ff' : '#475569',
       };
     });
 
     setCalendarEvents(mappedEvents);
-  }, [selectedResourceId, bookings, users, user]);
+  }, [selectedResourceId, bookings, user]);
 
   const clearFeedbacks = () => {
     setError(null);
@@ -89,6 +96,17 @@ export const Bookings: React.FC = () => {
   const timeToMinutes = (timeStr: string) => {
     const [hrs, mins] = timeStr.split(':').map(Number);
     return hrs * 60 + mins;
+  };
+
+  const refreshData = () => {
+    if (selectedResourceId) {
+      api.get(`/bookings/asset/${selectedResourceId}`)
+        .then((res) => setBookings(res.data))
+        .catch(() => {});
+    }
+    api.get('/bookings/my')
+      .then((res) => setMyBookingList(res.data))
+      .catch(() => {});
   };
 
   // Submit booking
@@ -109,87 +127,43 @@ export const Bookings: React.FC = () => {
       return;
     }
 
-    // 1. Overlap Validation
-    // Formula: RequestedStart < ExistingEnd AND RequestedEnd > ExistingStart
-    const resourceBookings = bookings.filter(
-      b => b.assetId === selectedResourceId && b.date === bookingDate && b.status !== 'CANCELLED'
-    );
+    const startDateTime = `${bookingDate}T${startTime}:00`;
+    const endDateTime = `${bookingDate}T${endTime}:00`;
 
-    const hasConflict = resourceBookings.some(existing => {
-      const existStart = timeToMinutes(existing.startTime);
-      const existEnd = timeToMinutes(existing.endTime);
-
-      return startMin < existEnd && endMin > existStart;
-    });
-
-    if (hasConflict) {
-      setError('COLLISION: The requested time slot overlaps with an existing booking. Please choose another time.');
-      return;
-    }
-
-    // 2. Save Booking
-    const requesterId = user ? user.id : 'emp-4';
-    
-    const newBooking: MockBooking = {
-      id: `book-${Date.now().toString().slice(-4)}`,
+    api.post('/bookings', {
       assetId: selectedResourceId,
-      userId: requesterId,
-      date: bookingDate,
-      startTime,
-      endTime,
-      status: 'UPCOMING',
-    };
-
-    const updatedBookings = [...bookings, newBooking];
-    saveDbTable('af_bookings', updatedBookings);
-
-    // Save activity logs
-    const logs = getDbTable<any>('af_logs');
-    logs.unshift({
-      id: `log-${Date.now()}`,
-      action: 'BOOKING_CREATE',
-      details: `Booked shared resource ${resources.find(r => r.id === selectedResourceId)?.name} on ${bookingDate} from ${startTime} to ${endTime}.`,
-      createdAt: new Date().toISOString()
-    });
-    saveDbTable('af_logs', logs);
-
-    setSuccess('Booking confirmed successfully.');
-    setShowAddForm(false);
-    setBookingDate('');
-    setStartTime('');
-    setEndTime('');
-    loadTables();
+      startTime: startDateTime,
+      endTime: endDateTime,
+    })
+      .then(() => {
+        setSuccess('Booking confirmed successfully.');
+        setShowAddForm(false);
+        setBookingDate('');
+        setStartTime('');
+        setEndTime('');
+        refreshData();
+      })
+      .catch((err) => {
+        setError(err.response?.data?.message || 'Failed to create booking. The slot may already be taken.');
+      });
   };
 
   // Cancel Booking
   const handleCancelBooking = (bookingId: string) => {
     clearFeedbacks();
-    
-    const updatedBookings = bookings.map(b => {
-      if (b.id === bookingId) {
-        return { ...b, status: 'CANCELLED' as const };
-      }
-      return b;
-    });
 
-    saveDbTable('af_bookings', updatedBookings);
-    
-    // Log
-    const logs = getDbTable<any>('af_logs');
-    logs.unshift({
-      id: `log-${Date.now()}`,
-      action: 'BOOKING_CANCEL',
-      details: `Cancelled booking for shared resource.`,
-      createdAt: new Date().toISOString()
-    });
-    saveDbTable('af_logs', logs);
-
-    setSuccess('Booking cancelled successfully.');
-    loadTables();
+    api.patch(`/bookings/${bookingId}/cancel`)
+      .then(() => {
+        setSuccess('Booking cancelled successfully.');
+        refreshData();
+      })
+      .catch((err) => {
+        setError(err.response?.data?.message || 'Failed to cancel booking.');
+      });
   };
 
-  const selectedResource = resources.find(r => r.id === selectedResourceId);
-  const myBookings = bookings.filter(b => b.userId === (user ? user.id : 'emp-4') && b.status !== 'CANCELLED');
+  const selectedResource = resources.find((r: any) => r.id === selectedResourceId);
+  const activeMyBookings = myBookingList.filter((b: any) => b.status !== 'CANCELLED');
 
   return (
     <div className="space-y-6">
@@ -236,7 +210,7 @@ export const Bookings: React.FC = () => {
             <h3 className="font-bold text-xs text-primary tracking-wide uppercase">Select Resource</h3>
             
             <div className="space-y-2">
-              {resources.map(res => (
+              {resources.map((res: any) => (
                 <button
                   key={res.id}
                   onClick={() => setSelectedResourceId(res.id)}
@@ -260,12 +234,12 @@ export const Bookings: React.FC = () => {
           <div className="glass-panel p-5 rounded-2xl border border-white/5 space-y-4">
             <h3 className="font-bold text-xs text-foreground tracking-wide uppercase">Your Reservations</h3>
             
-            {myBookings.length === 0 ? (
+            {activeMyBookings.length === 0 ? (
               <p className="text-[10px] text-muted-foreground italic text-center py-6">No active bookings registered.</p>
             ) : (
               <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
-                {myBookings.map(b => {
-                  const res = resources.find(r => r.id === b.assetId);
+                {activeMyBookings.map((b: any) => {
+                  const res = resources.find((r: any) => r.id === b.assetId);
                   return (
                     <div key={b.id} className="p-3 rounded-lg bg-accent/15 border border-border/40 text-[10px] space-y-2">
                       <div className="flex justify-between items-start">
@@ -273,11 +247,11 @@ export const Bookings: React.FC = () => {
                           <h4 className="font-bold text-foreground truncate">{res ? res.name : 'Resource'}</h4>
                           <div className="flex items-center gap-1 text-muted-foreground mt-0.5">
                             <CalendarIcon size={8} />
-                            <span>{new Date(b.date).toLocaleDateString()}</span>
+                            <span>{new Date(b.startTime).toLocaleDateString()}</span>
                           </div>
                           <div className="flex items-center gap-1 text-muted-foreground">
                             <Clock size={8} />
-                            <span>{b.startTime} - {b.endTime}</span>
+                            <span>{b.startTime.slice(11, 16)} - {b.endTime.slice(11, 16)}</span>
                           </div>
                         </div>
                         <button
