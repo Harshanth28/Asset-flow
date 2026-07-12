@@ -7,7 +7,7 @@ export const Forbidden: React.FC = () => {
 
   return (
     <div className="min-h-[70vh] flex flex-col justify-center items-center px-4 animate-in fade-in duration-300">
-      <div className="glass-panel max-w-md w-full p-8 rounded-2xl border border-white/10 text-center space-y-6 shadow-2xl relative">
+      <div className="glass-panel max-w-md w-full p-8 rounded-2xl border border-border/80 bg-white shadow-2xl text-center space-y-6 shadow-2xl relative">
         {/* Glow */}
         <div className="absolute inset-0 m-auto w-32 h-32 rounded-full bg-destructive/10 blur-[40px] pointer-events-none"></div>
 

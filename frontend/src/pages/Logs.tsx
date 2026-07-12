@@ -61,7 +61,7 @@ export const Logs: React.FC = () => {
       </div>
 
       {/* Logs Table list */}
-      <div className="glass-panel p-6 rounded-2xl border border-white/5 space-y-4">
+      <div className="glass-panel p-6 rounded-2xl border border-border/80 bg-white space-y-4">
         <h3 className="font-bold text-sm text-foreground uppercase tracking-wide flex items-center gap-2">
           <History size={16} className="text-primary" />
           <span>Security Audit Trail</span>

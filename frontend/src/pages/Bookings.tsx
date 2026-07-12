@@ -206,7 +206,7 @@ export const Bookings: React.FC = () => {
         {/* Left Side: Resource Selector & My Bookings list */}
         <div className="space-y-6 lg:col-span-1">
           {/* Resource Selector */}
-          <div className="glass-panel p-5 rounded-2xl border border-white/5 space-y-4">
+          <div className="glass-panel p-5 rounded-2xl border border-border/80 bg-white space-y-4">
             <h3 className="font-bold text-xs text-primary tracking-wide uppercase">Select Resource</h3>
             
             <div className="space-y-2">
@@ -231,7 +231,7 @@ export const Bookings: React.FC = () => {
           </div>
 
           {/* User's Reservations List */}
-          <div className="glass-panel p-5 rounded-2xl border border-white/5 space-y-4">
+          <div className="glass-panel p-5 rounded-2xl border border-border/80 bg-white space-y-4">
             <h3 className="font-bold text-xs text-foreground tracking-wide uppercase">Your Reservations</h3>
             
             {activeMyBookings.length === 0 ? (
@@ -270,7 +270,7 @@ export const Bookings: React.FC = () => {
         </div>
 
         {/* Right Side: FullCalendar Widget panel */}
-        <div className="lg:col-span-3 glass-panel p-6 rounded-2xl border border-white/5 space-y-4">
+        <div className="lg:col-span-3 glass-panel p-6 rounded-2xl border border-border/80 bg-white space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-border/40">
             <h3 className="font-bold text-sm text-foreground uppercase tracking-wide">
               {selectedResource ? `${selectedResource.name} Schedule` : 'Resource Schedule'}
@@ -303,7 +303,7 @@ export const Bookings: React.FC = () => {
       {/* --- CREATE RESERVATION POPUP MODAL --- */}
       {showAddForm && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center px-4 animate-in fade-in">
-          <div className="glass-panel w-full max-w-sm rounded-2xl p-6 border border-white/10 space-y-4 animate-in zoom-in-95">
+          <div className="glass-panel w-full max-w-sm rounded-2xl p-6 border border-border/80 bg-white shadow-2xl space-y-4 animate-in zoom-in-95">
             <div className="flex justify-between items-center pb-2 border-b border-border">
               <h3 className="font-bold text-sm text-primary tracking-wide uppercase">New Reservation</h3>
               <button onClick={() => setShowAddForm(false)} className="text-muted-foreground hover:text-foreground">

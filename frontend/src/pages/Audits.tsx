@@ -242,7 +242,7 @@ export const Audits: React.FC = () => {
 
       {/* Conditionally Render Auditor Checklist console */}
       {activeCycleForAudit ? (
-        <div className="glass-panel p-6 rounded-2xl border border-white/5 space-y-6 animate-in fade-in duration-200">
+        <div className="glass-panel p-6 rounded-2xl border border-border/80 bg-white space-y-6 animate-in fade-in duration-200">
           <div className="flex justify-between items-center pb-3 border-b border-border/40">
             <div>
               <h3 className="font-extrabold text-sm text-primary uppercase tracking-wide">
@@ -350,7 +350,7 @@ export const Audits: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in duration-200">
 
           {/* Left/Middle: Cycle Tracker */}
-          <div className="lg:col-span-2 glass-panel p-6 rounded-2xl border border-white/5 space-y-4">
+          <div className="lg:col-span-2 glass-panel p-6 rounded-2xl border border-border/80 bg-white space-y-4">
             <h3 className="font-bold text-sm text-foreground uppercase tracking-wide">Audit Runs</h3>
 
             <div className="overflow-x-auto">
@@ -412,7 +412,7 @@ export const Audits: React.FC = () => {
           </div>
 
           {/* Right Side: Visual discrepancy statistics report */}
-          <div className="glass-panel p-6 rounded-2xl border border-white/5 space-y-4">
+          <div className="glass-panel p-6 rounded-2xl border border-border/80 bg-white space-y-4">
             <h3 className="font-bold text-sm text-foreground uppercase tracking-wide">Discrepancy Engine</h3>
             <p className="text-[10px] text-muted-foreground leading-relaxed">Summary of missing or damaged physical inventory flagged during audit checks:</p>
 
@@ -451,7 +451,7 @@ export const Audits: React.FC = () => {
       {/* --- CREATE AUDIT CYCLE POPUP MODAL --- */}
       {showAddForm && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center px-4 animate-in fade-in">
-          <div className="glass-panel w-full max-w-sm rounded-2xl p-6 border border-white/10 space-y-4 animate-in zoom-in-95">
+          <div className="glass-panel w-full max-w-sm rounded-2xl p-6 border border-border/80 bg-white shadow-2xl space-y-4 animate-in zoom-in-95">
             <div className="flex justify-between items-center pb-2 border-b border-border">
               <h3 className="font-bold text-sm text-primary tracking-wide uppercase">New Audit Cycle</h3>
               <button onClick={() => setShowAddForm(false)} className="text-muted-foreground hover:text-foreground">

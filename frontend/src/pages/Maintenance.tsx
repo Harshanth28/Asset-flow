@@ -195,10 +195,10 @@ export const Maintenance: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
 
           {/* COLUMN 1: Pending review */}
-          <div className="glass-panel p-4 rounded-2xl border border-white/5 space-y-4">
-            <div className="flex justify-between items-center pb-2 border-b border-border/40">
+          <div className="glass-panel p-4 rounded-2xl border border-slate-200/60 bg-slate-100/45 space-y-4">
+            <div className="flex justify-between items-center pb-2 border-b border-slate-200">
               <h3 className="font-bold text-xs text-muted-foreground uppercase tracking-wider">Pending Review</h3>
-              <span className="px-2 py-0.5 rounded-full bg-accent/35 text-[10px] font-bold">{pendingRequests.length}</span>
+              <span className="px-2 py-0.5 rounded-full bg-slate-200 text-slate-800 text-[10px] font-bold">{pendingRequests.length}</span>
             </div>
 
             <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
@@ -209,7 +209,7 @@ export const Maintenance: React.FC = () => {
                   const asset = assets.find(a => a.id === r.assetId);
                   const raiser = users.find(u => u.id === r.raisedById);
                   return (
-                    <div key={r.id} className="p-3.5 rounded-xl bg-accent/15 border border-border/40 space-y-3">
+                    <div key={r.id} className="p-3.5 rounded-xl bg-white border border-slate-200/80 shadow-sm hover:shadow-md transition-all space-y-3">
                       <div>
                         <div className="flex justify-between items-center mb-1">
                           <span className="text-[9px] font-black text-primary">{asset ? asset.tag : 'AF-XXXX'}</span>
@@ -236,8 +236,8 @@ export const Maintenance: React.FC = () => {
           </div>
 
           {/* COLUMN 2: Approved & Scheduled */}
-          <div className="glass-panel p-4 rounded-2xl border border-white/5 space-y-4">
-            <div className="flex justify-between items-center pb-2 border-b border-border/40">
+          <div className="glass-panel p-4 rounded-2xl border border-slate-200/60 bg-slate-100/45 space-y-4">
+            <div className="flex justify-between items-center pb-2 border-b border-slate-200">
               <h3 className="font-bold text-xs text-primary tracking-wider uppercase">Scheduled</h3>
               <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-bold">{approvedRequests.length}</span>
             </div>
@@ -249,7 +249,7 @@ export const Maintenance: React.FC = () => {
                 approvedRequests.map(r => {
                   const asset = assets.find(a => a.id === r.assetId);
                   return (
-                    <div key={r.id} className="p-3.5 rounded-xl bg-accent/15 border border-border/40 space-y-3">
+                    <div key={r.id} className="p-3.5 rounded-xl bg-white border border-slate-200/80 shadow-sm hover:shadow-md transition-all space-y-3">
                       <div>
                         <div className="flex justify-between items-center mb-1">
                           <span className="text-[9px] font-black text-primary">{asset ? asset.tag : 'AF-XXXX'}</span>
@@ -274,10 +274,10 @@ export const Maintenance: React.FC = () => {
           </div>
 
           {/* COLUMN 3: In Progress */}
-          <div className="glass-panel p-4 rounded-2xl border border-white/5 space-y-4">
-            <div className="flex justify-between items-center pb-2 border-b border-border/40">
-              <h3 className="font-bold text-xs text-amber-500 tracking-wider uppercase">In Progress</h3>
-              <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 text-[10px] font-bold">{inProgressRequests.length}</span>
+          <div className="glass-panel p-4 rounded-2xl border border-slate-200/60 bg-slate-100/45 space-y-4">
+            <div className="flex justify-between items-center pb-2 border-b border-slate-200">
+              <h3 className="font-bold text-xs text-amber-600 tracking-wider uppercase">In Progress</h3>
+              <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 text-[10px] font-bold">{inProgressRequests.length}</span>
             </div>
 
             <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
@@ -287,7 +287,7 @@ export const Maintenance: React.FC = () => {
                 inProgressRequests.map(r => {
                   const asset = assets.find(a => a.id === r.assetId);
                   return (
-                    <div key={r.id} className="p-3.5 rounded-xl bg-accent/15 border border-border/40 space-y-3">
+                    <div key={r.id} className="p-3.5 rounded-xl bg-white border border-slate-200/80 shadow-sm hover:shadow-md transition-all space-y-3">
                       <div>
                         <div className="flex justify-between items-center mb-1">
                           <span className="text-[9px] font-black text-primary">{asset ? asset.tag : 'AF-XXXX'}</span>
@@ -312,10 +312,10 @@ export const Maintenance: React.FC = () => {
           </div>
 
           {/* COLUMN 4: Resolved */}
-          <div className="glass-panel p-4 rounded-2xl border border-white/5 space-y-4">
-            <div className="flex justify-between items-center pb-2 border-b border-border/40">
-              <h3 className="font-bold text-xs text-emerald-500 tracking-wider uppercase">Resolved Logs</h3>
-              <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-bold">{resolvedRequests.length}</span>
+          <div className="glass-panel p-4 rounded-2xl border border-slate-200/60 bg-slate-100/45 space-y-4">
+            <div className="flex justify-between items-center pb-2 border-b border-slate-200">
+              <h3 className="font-bold text-xs text-emerald-600 tracking-wider uppercase">Resolved Logs</h3>
+              <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 text-[10px] font-bold">{resolvedRequests.length}</span>
             </div>
 
             <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
@@ -325,7 +325,7 @@ export const Maintenance: React.FC = () => {
                 resolvedRequests.map(r => {
                   const asset = assets.find(a => a.id === r.assetId);
                   return (
-                    <div key={r.id} className="p-3 rounded-xl bg-emerald-950/5 border border-emerald-950/20 text-emerald-400/90 text-[10px] space-y-1 relative">
+                    <div key={r.id} className="p-3 rounded-xl bg-emerald-50/50 border border-emerald-200/80 text-emerald-700 text-[10px] space-y-1 relative shadow-sm">
                       <div className="flex justify-between">
                         <span className="font-bold">{asset ? asset.tag : 'AF-XXXX'}</span>
                         <span>Fixed</span>
@@ -342,7 +342,7 @@ export const Maintenance: React.FC = () => {
         </div>
       ) : (
         /* Employee view: Simplified history tracker */
-        <div className="glass-panel p-6 rounded-2xl border border-white/5 space-y-4">
+        <div className="glass-panel p-6 rounded-2xl border border-border/80 bg-white space-y-4 shadow-sm">
           <h3 className="font-bold text-sm text-foreground uppercase tracking-wide flex items-center gap-1.5">
             <ClipboardList size={16} className="text-primary" />
             <span>Your Submitted Maintenance Requests</span>
@@ -399,7 +399,7 @@ export const Maintenance: React.FC = () => {
       {/* --- MOCK ASSIGN TECHNICIAN MODAL POPUP --- */}
       {showAssignModal && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center px-4 animate-in fade-in">
-          <div className="glass-panel w-full max-w-sm rounded-2xl p-6 border border-white/10 space-y-4">
+          <div className="glass-panel w-full max-w-sm rounded-2xl p-6 border border-border/80 bg-white space-y-4 shadow-2xl">
             <div className="flex justify-between items-center pb-2 border-b border-border">
               <h3 className="font-bold text-sm text-primary tracking-wide uppercase">Approve & Assign Technician</h3>
               <button onClick={() => setShowAssignModal(null)} className="text-muted-foreground hover:text-foreground">
@@ -443,7 +443,7 @@ export const Maintenance: React.FC = () => {
       {/* --- SUBMIT REPAIR REQUEST POPUP MODAL --- */}
       {showAddForm && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center px-4 animate-in fade-in">
-          <div className="glass-panel w-full max-w-sm rounded-2xl p-6 border border-white/10 space-y-4 animate-in zoom-in-95">
+          <div className="glass-panel w-full max-w-sm rounded-2xl p-6 border border-border/80 bg-white space-y-4 animate-in zoom-in-95 shadow-2xl">
             <div className="flex justify-between items-center pb-2 border-b border-border">
               <h3 className="font-bold text-sm text-primary tracking-wide uppercase">File Maintenance Ticket</h3>
               <button onClick={() => setShowAddForm(false)} className="text-muted-foreground hover:text-foreground">

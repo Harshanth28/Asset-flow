@@ -128,7 +128,7 @@ export const Reports: React.FC = () => {
   };
 
   // Glowing HSL colors mapping matching our custom style system
-  const CHART_COLORS = ['#00e5ff', '#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
+  const CHART_COLORS = ['#4f46e5', '#10b981', '#06b6d4', '#f59e0b', '#ec4899'];
 
   return (
     <div className="space-y-6">
@@ -155,7 +155,7 @@ export const Reports: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         
         {/* CHART 1: Category Distribution */}
-        <div className="glass-panel p-6 rounded-2xl border border-white/5 space-y-4">
+        <div className="glass-panel p-6 rounded-2xl border border-border/80 bg-white space-y-4">
           <h3 className="font-bold text-xs text-primary tracking-wide uppercase flex items-center gap-1.5">
             <PieIcon size={14} />
             <span>Category Distribution</span>
@@ -181,8 +181,8 @@ export const Reports: React.FC = () => {
                     ))}
                   </Pie>
                   <Tooltip 
-                    contentStyle={{ backgroundColor: 'rgba(13, 20, 38, 0.95)', borderColor: 'rgba(255, 255, 255, 0.1)', borderRadius: '12px' }}
-                    itemStyle={{ color: '#fff', fontSize: '12px' }}
+                    contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.96)', borderColor: 'rgba(15, 23, 42, 0.08)', borderRadius: '12px', boxShadow: '0 4px 20px rgba(15, 23, 42, 0.05)' }}
+                    itemStyle={{ color: 'hsl(var(--foreground))', fontSize: '12px' }}
                   />
                   <Legend 
                     verticalAlign="bottom" 
@@ -197,7 +197,7 @@ export const Reports: React.FC = () => {
         </div>
 
         {/* CHART 2: Status Breakdown */}
-        <div className="glass-panel p-6 rounded-2xl border border-white/5 space-y-4">
+        <div className="glass-panel p-6 rounded-2xl border border-border/80 bg-white space-y-4">
           <h3 className="font-bold text-xs text-primary tracking-wide uppercase flex items-center gap-1.5">
             <BarChart3 size={14} />
             <span>Inventory Lifecycle status</span>
@@ -212,8 +212,8 @@ export const Reports: React.FC = () => {
                   <XAxis dataKey="name" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 9 }} />
                   <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 9 }} />
                   <Tooltip 
-                    contentStyle={{ backgroundColor: 'rgba(13, 20, 38, 0.95)', borderColor: 'rgba(255, 255, 255, 0.1)', borderRadius: '12px' }}
-                    itemStyle={{ color: '#fff', fontSize: '11px' }}
+                    contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.96)', borderColor: 'rgba(15, 23, 42, 0.08)', borderRadius: '12px', boxShadow: '0 4px 20px rgba(15, 23, 42, 0.05)' }}
+                    itemStyle={{ color: 'hsl(var(--foreground))', fontSize: '11px' }}
                   />
                   <Bar dataKey="count" fill="#00e5ff" radius={[4, 4, 0, 0]}>
                     {statusData.map((_, index) => (
@@ -227,7 +227,7 @@ export const Reports: React.FC = () => {
         </div>
 
         {/* CHART 3: Resource Booking Trends */}
-        <div className="glass-panel p-6 rounded-2xl border border-white/5 space-y-4 md:col-span-2 xl:col-span-1">
+        <div className="glass-panel p-6 rounded-2xl border border-border/80 bg-white space-y-4 md:col-span-2 xl:col-span-1">
           <h3 className="font-bold text-xs text-primary tracking-wide uppercase flex items-center gap-1.5">
             <TrendingUp size={14} />
             <span>Resource Reservation Volume</span>
@@ -239,12 +239,12 @@ export const Reports: React.FC = () => {
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={bookingTrendData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(15, 23, 42, 0.04)" />
                   <XAxis dataKey="date" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 9 }} />
                   <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 9 }} />
                   <Tooltip 
-                    contentStyle={{ backgroundColor: 'rgba(13, 20, 38, 0.95)', borderColor: 'rgba(255, 255, 255, 0.1)', borderRadius: '12px' }}
-                    itemStyle={{ color: '#fff', fontSize: '11px' }}
+                    contentStyle={{ backgroundColor: 'rgba(255, 255, 255, 0.96)', borderColor: 'rgba(15, 23, 42, 0.08)', borderRadius: '12px', boxShadow: '0 4px 20px rgba(15, 23, 42, 0.05)' }}
+                    itemStyle={{ color: 'hsl(var(--foreground))', fontSize: '11px' }}
                   />
                   <Line type="monotone" dataKey="Bookings" stroke="#00e5ff" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
                 </LineChart>
@@ -256,7 +256,7 @@ export const Reports: React.FC = () => {
       </div>
 
       {/* Grid: Department Allocation Table Summary */}
-      <div className="glass-panel p-6 rounded-2xl border border-white/5 space-y-4">
+      <div className="glass-panel p-6 rounded-2xl border border-border/80 bg-white space-y-4">
         <h3 className="font-bold text-sm text-foreground uppercase tracking-wide flex items-center gap-2">
           <FileSpreadsheet size={16} className="text-primary" />
           <span>Department-wise Allocation Summary</span>

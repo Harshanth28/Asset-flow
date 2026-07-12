@@ -79,7 +79,7 @@ const Signup: React.FC = () => {
         </div>
 
         {/* Form Panel */}
-        <div className="glass-panel p-8 rounded-2xl shadow-2xl relative border border-white/10">
+        <div className="glass-panel p-8 rounded-2xl shadow-2xl relative border border-border/80 bg-white shadow-2xl">
           <h2 className="text-xl font-bold mb-6 text-foreground tracking-wide">Register Account</h2>
 
           {error && (

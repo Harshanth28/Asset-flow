@@ -215,7 +215,7 @@ export const OrgSetup: React.FC = () => {
       {activeTab === 'depts' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in duration-200">
           {/* Creation Form */}
-          <div className="glass-panel p-6 rounded-2xl border border-white/5 space-y-4 h-fit">
+          <div className="glass-panel p-6 rounded-2xl border border-border/80 bg-white space-y-4 h-fit">
             <h3 className="font-bold text-sm text-primary tracking-wide uppercase">New Department</h3>
             <form onSubmit={handleCreateDept} className="space-y-4">
               <div className="space-y-1.5">
@@ -268,7 +268,7 @@ export const OrgSetup: React.FC = () => {
           </div>
 
           {/* Department List Grid */}
-          <div className="lg:col-span-2 glass-panel p-6 rounded-2xl border border-white/5 space-y-4">
+          <div className="lg:col-span-2 glass-panel p-6 rounded-2xl border border-border/80 bg-white space-y-4">
             <h3 className="font-bold text-sm text-foreground tracking-wide uppercase">Active Departments</h3>
             
             <div className="overflow-x-auto">
@@ -315,7 +315,7 @@ export const OrgSetup: React.FC = () => {
       {activeTab === 'categories' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in duration-200">
           {/* Category Creation Form */}
-          <div className="glass-panel p-6 rounded-2xl border border-white/5 space-y-4 h-fit">
+          <div className="glass-panel p-6 rounded-2xl border border-border/80 bg-white space-y-4 h-fit">
             <h3 className="font-bold text-sm text-primary tracking-wide uppercase">New Asset Category</h3>
             <form onSubmit={handleCreateCategory} className="space-y-4">
               <div className="space-y-1.5">
@@ -377,7 +377,7 @@ export const OrgSetup: React.FC = () => {
           </div>
 
           {/* Categories display list */}
-          <div className="lg:col-span-2 glass-panel p-6 rounded-2xl border border-white/5 space-y-4">
+          <div className="lg:col-span-2 glass-panel p-6 rounded-2xl border border-border/80 bg-white space-y-4">
             <h3 className="font-bold text-sm text-foreground tracking-wide uppercase">Configured Templates</h3>
             
             <div className="overflow-x-auto">
@@ -420,7 +420,7 @@ export const OrgSetup: React.FC = () => {
 
       {/* TAB C: Employee Directory */}
       {activeTab === 'directory' && (
-        <div className="glass-panel p-6 rounded-2xl border border-white/5 space-y-4 animate-in fade-in duration-200">
+        <div className="glass-panel p-6 rounded-2xl border border-border/80 bg-white space-y-4 animate-in fade-in duration-200">
           <h3 className="font-bold text-sm text-foreground tracking-wide uppercase">Employee Directory</h3>
           <p className="text-xs text-muted-foreground">Admin-only promotions. Directory is the sole authority to assign and modify system roles.</p>
           

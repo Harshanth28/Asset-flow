@@ -245,7 +245,7 @@ export const AssetDirectory: React.FC = () => {
         </div>
       )}
 
-      <div className="glass-panel p-4 rounded-2xl border border-white/5 grid grid-cols-1 md:grid-cols-4 gap-3">
+      <div className="glass-panel p-4 rounded-2xl border border-border/80 bg-white grid grid-cols-1 md:grid-cols-4 gap-3">
         <div className="relative">
           <Search className="absolute left-3.5 top-3 w-4 h-4 text-muted-foreground" />
           <input
@@ -304,7 +304,7 @@ export const AssetDirectory: React.FC = () => {
               <div 
                 key={asset.id} 
                 onClick={() => setSelectedAsset(asset)}
-                className="glass-panel p-5 rounded-2xl border border-white/5 hover:border-primary/20 hover:-translate-y-1 transition-all cursor-pointer flex flex-col justify-between h-48 group shadow-lg"
+                className="glass-panel p-5 rounded-2xl border border-border/80 bg-white hover:border-primary/25 hover:-translate-y-1 transition-all cursor-pointer flex flex-col justify-between h-48 group shadow-sm hover:shadow-md"
               >
                 <div>
                   <div className="flex justify-between items-start gap-2 mb-2">
@@ -341,7 +341,7 @@ export const AssetDirectory: React.FC = () => {
 
       {showScanner && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center px-4 animate-in fade-in">
-          <div className="glass-panel w-full max-w-sm rounded-2xl p-6 border border-white/10 space-y-4">
+          <div className="glass-panel w-full max-w-sm rounded-2xl p-6 border border-border/80 bg-white space-y-4 shadow-2xl">
             <div className="flex justify-between items-center pb-2 border-b border-border">
               <h3 className="font-extrabold text-sm text-primary flex items-center gap-1.5">
                 <ScanLine size={16} />
@@ -352,7 +352,7 @@ export const AssetDirectory: React.FC = () => {
               </button>
             </div>
             
-            <div className="relative w-full h-36 bg-black/40 rounded-xl border border-white/5 flex items-center justify-center overflow-hidden">
+            <div className="relative w-full h-36 bg-slate-900 rounded-xl border border-slate-800 flex items-center justify-center overflow-hidden">
               <span className="absolute top-2 left-2 w-3.5 h-3.5 border-t-2 border-l-2 border-primary"></span>
               <span className="absolute top-2 right-2 w-3.5 h-3.5 border-t-2 border-r-2 border-primary"></span>
               <span className="absolute bottom-2 left-2 w-3.5 h-3.5 border-b-2 border-l-2 border-primary"></span>
@@ -390,7 +390,7 @@ export const AssetDirectory: React.FC = () => {
 
       {showAddForm && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto animate-in fade-in">
-          <div className="glass-panel w-full max-w-xl rounded-2xl p-6 border border-white/10 space-y-4 my-8">
+          <div className="glass-panel w-full max-w-xl rounded-2xl p-6 border border-border/80 bg-white space-y-4 my-8 shadow-2xl">
             <div className="flex justify-between items-center pb-2 border-b border-border">
               <h3 className="font-bold text-sm text-primary tracking-wide uppercase">Register Physical Asset</h3>
               <button onClick={() => { setShowAddForm(false); setMetaFields({}); }} className="text-muted-foreground hover:text-foreground">

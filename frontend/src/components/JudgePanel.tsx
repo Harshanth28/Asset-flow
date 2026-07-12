@@ -179,7 +179,7 @@ export const JudgePanel: React.FC = () => {
 
       {/* Controller Panel Card */}
       {isOpen && (
-        <div className="absolute bottom-16 right-0 w-80 glass-panel rounded-2xl p-5 shadow-2xl space-y-4 border border-white/10 animate-in slide-in-from-bottom-5 fade-in">
+        <div className="absolute bottom-16 right-0 w-80 glass-panel rounded-2xl p-5 shadow-2xl space-y-4 border border-border/80 bg-white shadow-2xl animate-in slide-in-from-bottom-5 fade-in">
           <div>
             <h3 className="font-extrabold text-sm text-primary tracking-wide flex items-center gap-2">
               <Shield size={16} />

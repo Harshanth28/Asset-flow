@@ -277,7 +277,7 @@ export const Allocations: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Left Side: Create Allocation Form (Managers / Admins only) */}
-        <div className="glass-panel p-6 rounded-2xl border border-white/5 space-y-4 h-fit">
+        <div className="glass-panel p-6 rounded-2xl border border-border/80 bg-white space-y-4 h-fit">
           <h3 className="font-bold text-sm text-primary tracking-wide uppercase">New Asset Allocation</h3>
           
           <form onSubmit={handleAllocate} className="space-y-4">
@@ -384,7 +384,7 @@ export const Allocations: React.FC = () => {
           
           {/* Section: Pending Transfers */}
           {pendingTransfersList.length > 0 && (
-            <div className="glass-panel p-6 rounded-2xl border border-white/5 space-y-4">
+            <div className="glass-panel p-6 rounded-2xl border border-border/80 bg-white space-y-4">
               <h3 className="font-extrabold text-sm text-amber-400 tracking-wide uppercase flex items-center gap-2">
                 <ArrowLeftRight size={16} />
                 <span>Pending Transfer Requests ({pendingTransfersList.length})</span>
@@ -438,7 +438,7 @@ export const Allocations: React.FC = () => {
           )}
 
           {/* Section: Active Allocations */}
-          <div className="glass-panel p-6 rounded-2xl border border-white/5 space-y-4">
+          <div className="glass-panel p-6 rounded-2xl border border-border/80 bg-white space-y-4">
             <h3 className="font-bold text-sm text-foreground tracking-wide uppercase">Active Checked-out Inventory</h3>
             
             <div className="overflow-x-auto">
@@ -496,7 +496,7 @@ export const Allocations: React.FC = () => {
       {/* --- RETURN ASSET CHECK-IN MODAL --- */}
       {showReturnModal && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center px-4 animate-in fade-in">
-          <div className="glass-panel w-full max-w-sm rounded-2xl p-6 border border-white/10 space-y-4">
+          <div className="glass-panel w-full max-w-sm rounded-2xl p-6 border border-border/80 bg-white shadow-2xl space-y-4">
             <div className="flex justify-between items-center pb-2 border-b border-border">
               <h3 className="font-bold text-sm text-primary tracking-wide uppercase">Asset Return Check-in</h3>
               <button onClick={() => setShowReturnModal(null)} className="text-muted-foreground hover:text-foreground">
