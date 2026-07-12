@@ -1,14 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAppSelector } from '../store';
-import { 
-  getDbTable, 
-  saveDbTable, 
-  type MockAsset, 
-  type MockAllocation, 
-  type MockTransfer, 
-  type MockUser,
-  type MockDepartment 
-} from '../utils/mockDb';
+import api from '../utils/api';
 import { 
   ArrowLeftRight, 
   Check, 
@@ -17,24 +9,63 @@ import {
   CheckCircle2
 } from 'lucide-react';
 
+interface ApiAsset {
+  id: string;
+  tag: string;
+  name: string;
+  status: string;
+  condition: string;
+}
+
+interface ApiAllocation {
+  id: string;
+  assetId: string;
+  userId?: string;
+  departmentId?: string;
+  expectedReturnDate?: string;
+  status: string;
+  actualReturnDate?: string;
+  conditionOnReturn?: string;
+  createdAt: string;
+}
+
+interface ApiTransfer {
+  id: string;
+  allocationId: string;
+  targetUserId?: string;
+  targetDeptId?: string;
+  status: string;
+  requestedById: string;
+  createdAt: string;
+}
+
+interface ApiUser {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+}
+
+interface ApiDepartment {
+  id: string;
+  name: string;
+}
+
 export const Allocations: React.FC = () => {
-  const { user } = useAppSelector((state) => state.auth);
+  useAppSelector((state) => state.auth);
 
-  // Database lists
-  const [assets, setAssets] = useState<MockAsset[]>([]);
-  const [allocations, setAllocations] = useState<MockAllocation[]>([]);
-  const [transfers, setTransfers] = useState<MockTransfer[]>([]);
-  const [users, setUsers] = useState<MockUser[]>([]);
-  const [departments, setDepartments] = useState<MockDepartment[]>([]);
+  const [assets, setAssets] = useState<ApiAsset[]>([]);
+  const [allocations, setAllocations] = useState<ApiAllocation[]>([]);
+  const [transfers, setTransfers] = useState<ApiTransfer[]>([]);
+  const [users, setUsers] = useState<ApiUser[]>([]);
+  const [departments, setDepartments] = useState<ApiDepartment[]>([]);
 
-  // Form states
   const [selectedAssetId, setSelectedAssetId] = useState('');
   const [targetUserId, setTargetUserId] = useState('');
   const [targetDeptId, setTargetDeptId] = useState('');
   const [expectedReturn, setExpectedReturn] = useState('');
   const [assigneeType, setAssigneeType] = useState<'employee' | 'department'>('employee');
 
-  // Conflict state
   const [conflictDetail, setConflictDetail] = useState<{
     holderName: string;
     expectedReturn: string;
@@ -42,22 +73,30 @@ export const Allocations: React.FC = () => {
     allocId: string;
   } | null>(null);
 
-  // Return asset modal state
-  const [showReturnModal, setShowReturnModal] = useState<string | null>(null); // allocId
+  const [showReturnModal, setShowReturnModal] = useState<string | null>(null);
   const [returnCondition, setReturnCondition] = useState<'Excellent' | 'Good' | 'Fair' | 'Poor'>('Excellent');
   const [returnNotes, setReturnNotes] = useState('');
 
-  // Feedback states
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Load lists
-  const loadTables = () => {
-    setAssets(getDbTable<MockAsset>('af_assets'));
-    setAllocations(getDbTable<MockAllocation>('af_allocations'));
-    setTransfers(getDbTable<MockTransfer>('af_transfers'));
-    setUsers(getDbTable<MockUser>('af_users'));
-    setDepartments(getDbTable<MockDepartment>('af_departments'));
+  const loadTables = async () => {
+    try {
+      const [assetsRes, allocationsRes, transfersRes, usersRes, departmentsRes] = await Promise.all([
+        api.get<ApiAsset[]>('/assets'),
+        api.get<ApiAllocation[]>('/allocations'),
+        api.get<ApiTransfer[]>('/allocations/transfers'),
+        api.get<ApiUser[]>('/users/directory'),
+        api.get<ApiDepartment[]>('/departments'),
+      ]);
+      setAssets(assetsRes.data);
+      setAllocations(allocationsRes.data);
+      setTransfers(transfersRes.data);
+      setUsers(usersRes.data);
+      setDepartments(departmentsRes.data);
+    } catch {
+      setError('Failed to load data. Please try again.');
+    }
   };
 
   useEffect(() => {
@@ -70,8 +109,7 @@ export const Allocations: React.FC = () => {
     setConflictDetail(null);
   };
 
-  // Submit allocation request
-  const handleAllocate = (e: React.FormEvent) => {
+  const handleAllocate = async (e: React.FormEvent) => {
     e.preventDefault();
     clearFeedbacks();
 
@@ -90,239 +128,107 @@ export const Allocations: React.FC = () => {
       return;
     }
 
-    // 1. Conflict Check: Is the asset already held?
-    const targetAsset = assets.find(a => a.id === selectedAssetId);
-    if (!targetAsset) return;
+    const payload: Record<string, any> = { assetId: selectedAssetId };
+    if (assigneeType === 'employee') {
+      payload.employeeId = targetUserId;
+    } else {
+      payload.departmentId = targetDeptId;
+    }
+    if (expectedReturn) {
+      payload.expectedReturnDate = expectedReturn;
+    }
 
-    if (targetAsset.status === 'ALLOCATED') {
-      // Find the active allocation
-      const activeAlloc = allocations.find(a => a.assetId === selectedAssetId && a.status === 'ACTIVE');
-      if (activeAlloc) {
-        const holder = users.find(u => u.id === activeAlloc.userId);
-        const holderDept = departments.find(d => d.id === activeAlloc.departmentId);
-        
+    try {
+      await api.post('/allocations', payload);
+      const targetAsset = assets.find(a => a.id === selectedAssetId);
+      setSuccess(`Asset ${targetAsset?.tag ?? ''} allocated successfully.`);
+      setSelectedAssetId('');
+      setTargetUserId('');
+      setTargetDeptId('');
+      setExpectedReturn('');
+      await loadTables();
+    } catch (err: any) {
+      if (err.response?.status === 409) {
+        const data = err.response.data;
+        const activeAlloc = allocations.find(a => a.assetId === selectedAssetId && a.status === 'ACTIVE');
         setConflictDetail({
-          holderName: holder ? holder.name : (holderDept ? holderDept.name : 'Unknown Holder'),
-          expectedReturn: activeAlloc.expectedReturnDate || 'No return date specified',
+          holderName: data.heldBy ?? data.heldByDept ?? 'Unknown Holder',
+          expectedReturn: activeAlloc?.expectedReturnDate || 'No return date specified',
           assetId: selectedAssetId,
-          allocId: activeAlloc.id
+          allocId: activeAlloc?.id ?? '',
         });
         setError('CONFLICT: This asset is currently checked out by another employee.');
-        return;
+      } else {
+        setError(err.response?.data?.message || 'Failed to allocate asset. Please try again.');
       }
     }
+  };
 
-    if (targetAsset.status === 'UNDER_MAINTENANCE' || targetAsset.status === 'LOST') {
-      setError(`Cannot allocate: This asset is currently marked as ${targetAsset.status.replace('_', ' ')}.`);
-      return;
+  const handleInitiateTransfer = async (_assetId: string, allocId: string) => {
+    clearFeedbacks();
+
+    const payload: Record<string, any> = { allocationId: allocId };
+    if (assigneeType === 'employee' && targetUserId) {
+      payload.toEmployeeId = targetUserId;
     }
 
-    // 2. Process allocation
-    const newAlloc: MockAllocation = {
-      id: `alloc-${Date.now().toString().slice(-4)}`,
-      assetId: selectedAssetId,
-      userId: assigneeType === 'employee' ? targetUserId : undefined,
-      departmentId: assigneeType === 'department' ? targetDeptId : undefined,
-      expectedReturnDate: expectedReturn || undefined,
-      status: 'ACTIVE',
-      createdAt: new Date().toISOString()
-    };
-
-    // Update asset status to ALLOCATED
-    const updatedAssets = assets.map(a => {
-      if (a.id === selectedAssetId) {
-        return { ...a, status: 'ALLOCATED' as const };
-      }
-      return a;
-    });
-
-    saveDbTable('af_allocations', [...allocations, newAlloc]);
-    saveDbTable('af_assets', updatedAssets);
-
-    // Log action
-    const logs = getDbTable<any>('af_logs');
-    logs.unshift({
-      id: `log-${Date.now()}`,
-      action: 'ALLOCATE',
-      details: `Allocated asset ${targetAsset.tag} (${targetAsset.name}) to ${assigneeType === 'employee' ? 'Employee' : 'Department'}.`,
-      createdAt: new Date().toISOString()
-    });
-    saveDbTable('af_logs', logs);
-
-    setSuccess(`Asset ${targetAsset.tag} allocated successfully.`);
-    setSelectedAssetId('');
-    setTargetUserId('');
-    setTargetDeptId('');
-    setExpectedReturn('');
-    loadTables();
+    try {
+      await api.post('/allocations/transfers/request', payload);
+      setSuccess('Transfer request has been submitted to the Asset Manager for review.');
+      setConflictDetail(null);
+      setSelectedAssetId('');
+      setTargetUserId('');
+      setTargetDeptId('');
+      setExpectedReturn('');
+      await loadTables();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to request transfer.');
+    }
   };
 
-  // Initiate Transfer Request from conflict window
-  const handleInitiateTransfer = (assetId: string, allocId: string) => {
+  const handleApproveTransfer = async (transferId: string) => {
     clearFeedbacks();
-    
-    // Find current active user
-    const requesterId = user ? user.id : 'seed-employee';
-
-    const newTransfer: MockTransfer = {
-      id: `trans-${Date.now().toString().slice(-4)}`,
-      allocationId: allocId,
-      targetUserId: assigneeType === 'employee' ? targetUserId : undefined,
-      targetDeptId: assigneeType === 'department' ? targetDeptId : undefined,
-      status: 'PENDING',
-      requestedById: requesterId,
-      createdAt: new Date().toISOString()
-    };
-
-    saveDbTable('af_transfers', [...transfers, newTransfer]);
-
-    // Send visual notification
-    const notifications = getDbTable<any>('af_notifications');
-    notifications.unshift({
-      id: `notify-${Date.now()}`,
-      userId: 'emp-2', // Send notification alert to Asset Manager (Sarah)
-      title: '🔄 Transfer Request Raised',
-      message: `A transfer request has been initiated for asset ${assets.find(a => a.id === assetId)?.tag}`,
-      type: 'TRANSFER_REQUEST',
-      isRead: false,
-      createdAt: new Date().toISOString()
-    });
-    saveDbTable('af_notifications', notifications);
-
-    setSuccess('Transfer request has been submitted to the Asset Manager for review.');
-    setConflictDetail(null);
-    setSelectedAssetId('');
-    setTargetUserId('');
-    setTargetDeptId('');
-    setExpectedReturn('');
-    loadTables();
+    try {
+      await api.patch(`/allocations/transfers/${transferId}/approve`);
+      setSuccess('Transfer request approved. Asset has been re-allocated.');
+      await loadTables();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to approve transfer.');
+    }
   };
 
-  // Approve Transfer Logic
-  const handleApproveTransfer = (transferId: string) => {
+  const handleRejectTransfer = async (transferId: string) => {
     clearFeedbacks();
-    const transfer = transfers.find(t => t.id === transferId);
-    if (!transfer) return;
-
-    // 1. Find the old allocation
-    const oldAlloc = allocations.find(a => a.id === transfer.allocationId);
-    if (!oldAlloc) return;
-
-    const asset = assets.find(a => a.id === oldAlloc.assetId);
-    if (!asset) return;
-
-    // 2. Mark old allocation as TRANSFERRED
-    const updatedAllocations = allocations.map(a => {
-      if (a.id === oldAlloc.id) {
-        return { ...a, status: 'TRANSFERRED', actualReturnDate: new Date().toISOString().split('T')[0] };
-      }
-      return a;
-    });
-
-    // 3. Create new active allocation
-    const newAlloc: MockAllocation = {
-      id: `alloc-tr-${Date.now().toString().slice(-4)}`,
-      assetId: oldAlloc.assetId,
-      userId: transfer.targetUserId || undefined,
-      departmentId: transfer.targetDeptId || undefined,
-      expectedReturnDate: oldAlloc.expectedReturnDate,
-      status: 'ACTIVE',
-      createdAt: new Date().toISOString()
-    };
-
-    // 4. Update transfer request status
-    const updatedTransfers = transfers.map(t => {
-      if (t.id === transferId) {
-        return { ...t, status: 'APPROVED' };
-      }
-      return t;
-    });
-
-    saveDbTable('af_allocations', [...updatedAllocations, newAlloc]);
-    saveDbTable('af_transfers', updatedTransfers);
-
-    // Save activity logs
-    const logs = getDbTable<any>('af_logs');
-    logs.unshift({
-      id: `log-${Date.now()}`,
-      action: 'TRANSFER_APPROVE',
-      details: `Approved transfer of asset ${asset.tag} (${asset.name}) to target holder.`,
-      createdAt: new Date().toISOString()
-    });
-    saveDbTable('af_logs', logs);
-
-    setSuccess('Transfer request approved. Asset has been re-allocated.');
-    loadTables();
+    try {
+      await api.patch(`/allocations/transfers/${transferId}/reject`);
+      setSuccess('Transfer request rejected.');
+      await loadTables();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to reject transfer.');
+    }
   };
 
-  // Reject Transfer Logic
-  const handleRejectTransfer = (transferId: string) => {
-    clearFeedbacks();
-    const updatedTransfers = transfers.map(t => {
-      if (t.id === transferId) {
-        return { ...t, status: 'REJECTED' };
-      }
-      return t;
-    });
-    saveDbTable('af_transfers', updatedTransfers);
-    setSuccess('Transfer request rejected.');
-    loadTables();
-  };
-
-  // Return Asset Submission
-  const handleReturnAsset = (e: React.FormEvent) => {
+  const handleReturnAsset = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!showReturnModal) return;
 
-    const allocId = showReturnModal;
-    const activeAlloc = allocations.find(a => a.id === allocId);
-    if (!activeAlloc) return;
+    try {
+      await api.patch(`/allocations/${showReturnModal}/return`, {
+        checkInNotes: returnNotes,
+      });
 
-    const asset = assets.find(a => a.id === activeAlloc.assetId);
-    if (!asset) return;
-
-    // 1. Update Allocation
-    const updatedAllocations = allocations.map(a => {
-      if (a.id === allocId) {
-        return { 
-          ...a, 
-          status: 'RETURNED', 
-          actualReturnDate: new Date().toISOString().split('T')[0],
-          conditionOnReturn: returnCondition
-        };
-      }
-      return a;
-    });
-
-    // 2. Revert Asset back to AVAILABLE and update condition
-    const updatedAssets = assets.map(a => {
-      if (a.id === activeAlloc.assetId) {
-        return { ...a, status: 'AVAILABLE' as const, condition: returnCondition };
-      }
-      return a;
-    });
-
-    saveDbTable('af_allocations', updatedAllocations);
-    saveDbTable('af_assets', updatedAssets);
-
-    // Log Action
-    const logs = getDbTable<any>('af_logs');
-    logs.unshift({
-      id: `log-${Date.now()}`,
-      action: 'RETURN',
-      details: `Asset ${asset.tag} returned in ${returnCondition} condition. Notes: ${returnNotes}`,
-      createdAt: new Date().toISOString()
-    });
-    saveDbTable('af_logs', logs);
-
-    setSuccess(`Asset ${asset.tag} returned successfully and is now AVAILABLE.`);
-    setShowReturnModal(null);
-    setReturnCondition('Excellent');
-    setReturnNotes('');
-    loadTables();
+      const activeAlloc = allocations.find(a => a.id === showReturnModal);
+      const asset = assets.find(a => a.id === activeAlloc?.assetId);
+      setSuccess(`Asset ${asset?.tag ?? ''} returned successfully and is now AVAILABLE.`);
+      setShowReturnModal(null);
+      setReturnCondition('Excellent');
+      setReturnNotes('');
+      await loadTables();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to return asset.');
+    }
   };
 
-  // Filters active allocations for directory
   const activeAllocationsList = allocations.filter(a => a.status === 'ACTIVE');
   const pendingTransfersList = transfers.filter(t => t.status === 'PENDING');
 
