@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { UserPlus, Mail, Lock, User as UserIcon, ShieldAlert } from 'lucide-react';
+import api from '../utils/api';
 
 const signupSchema = z
   .object({
@@ -38,41 +39,21 @@ const Signup: React.FC = () => {
     setLoading(true);
 
     try {
-      // Fetch existing mock custom users
-      const savedUsersRaw = localStorage.getItem('af_custom_users');
-      const customUsers = savedUsersRaw ? JSON.parse(savedUsersRaw) : [];
-
-      // Check if email already exists
-      const emailExists = customUsers.some((u: any) => u.email === data.email);
-      if (emailExists || ['admin@assetflow.com', 'manager@assetflow.com', 'priya@assetflow.com', 'raj@assetflow.com'].includes(data.email)) {
-        throw new Error('An account with this email address already exists.');
-      }
-
-      // Add new employee user (role is locked to EMPLOYEE)
-      customUsers.push({
-        id: `custom-usr-${Date.now().toString().slice(-4)}`,
+      await api.post('/users/signup', {
         name: data.name,
         email: data.email,
         password: data.password,
-        role: 'EMPLOYEE',
-        status: 'active',
       });
 
-      // Save to localStorage
-      localStorage.setItem('af_custom_users', JSON.stringify(customUsers));
-
-      // Simulate a network delay
+      setSuccess(true);
+      setLoading(false);
       setTimeout(() => {
-        setSuccess(true);
-        setLoading(false);
-        // Redirect to login after 1.5 seconds
-        setTimeout(() => {
-          navigate('/login');
-        }, 1500);
-      }, 800);
-
+        navigate('/login');
+      }, 1500);
     } catch (err: any) {
-      setError(err.message || 'Signup failed. Please try again.');
+      const message =
+        err.response?.data?.message || 'Signup failed. Please try again.';
+      setError(message);
       setLoading(false);
     }
   };
