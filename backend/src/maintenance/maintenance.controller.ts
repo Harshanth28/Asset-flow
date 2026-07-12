@@ -1,6 +1,18 @@
-import { Controller, Post, Get, Patch, Param, Body, Req, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Patch,
+  Param,
+  Body,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { MaintenanceService } from './maintenance.service';
-import { CreateMaintenanceDto, AssignTechnicianDto } from './dto/maintenance.dto';
+import {
+  CreateMaintenanceDto,
+  AssignTechnicianDto,
+} from './dto/maintenance.dto';
 import { JwtAuthGuard, RolesGuard } from '../users/auth.guard';
 import { Roles } from '../users/roles.decorator';
 import { Role } from '@prisma/client';
@@ -12,7 +24,10 @@ export class MaintenanceController {
 
   // Any user can raise a request
   @Post()
-  create(@Req() req: any, @Body() dto: CreateMaintenanceDto) {
+  create(
+    @Req() req: { user: { sub: string } },
+    @Body() dto: CreateMaintenanceDto,
+  ) {
     return this.maintenanceService.create(req.user.sub, dto);
   }
 

@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { AssetStatus, AllocationStatus, BookingStatus, MaintenanceStatus } from '@prisma/client';
+import {
+  AssetStatus,
+  AllocationStatus,
+  BookingStatus,
+  MaintenanceStatus,
+} from '@prisma/client';
 
 @Injectable()
 export class DashboardService {
@@ -8,7 +13,11 @@ export class DashboardService {
 
   async getKPIs() {
     const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayStart = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    );
     const todayEnd = new Date(todayStart.getTime() + 86400000);
 
     const [
@@ -24,12 +33,16 @@ export class DashboardService {
       this.prisma.asset.count({ where: { status: AssetStatus.ALLOCATED } }),
       this.prisma.maintenanceRequest.count({
         where: {
-          status: { in: [MaintenanceStatus.APPROVED, MaintenanceStatus.IN_PROGRESS] },
+          status: {
+            in: [MaintenanceStatus.APPROVED, MaintenanceStatus.IN_PROGRESS],
+          },
           updatedAt: { gte: todayStart, lt: todayEnd },
         },
       }),
       this.prisma.resourceBooking.count({
-        where: { status: { in: [BookingStatus.UPCOMING, BookingStatus.ONGOING] } },
+        where: {
+          status: { in: [BookingStatus.UPCOMING, BookingStatus.ONGOING] },
+        },
       }),
       this.prisma.transferRequest.count({ where: { status: 'PENDING' } }),
       this.prisma.assetAllocation.count({

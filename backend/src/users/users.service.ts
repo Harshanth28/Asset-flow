@@ -1,6 +1,16 @@
-import { Injectable, ConflictException, UnauthorizedException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  UnauthorizedException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateUserDto, LoginDto, PromoteUserDto, UpdateUserDto } from './dto/user.dto';
+import {
+  CreateUserDto,
+  LoginDto,
+  PromoteUserDto,
+  UpdateUserDto,
+} from './dto/user.dto';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { Role, UserStatus } from '@prisma/client';
@@ -86,7 +96,8 @@ export class UsersService {
       where: { id },
       data: {
         name: dto.name !== undefined ? dto.name : undefined,
-        departmentId: dto.departmentId !== undefined ? dto.departmentId : undefined,
+        departmentId:
+          dto.departmentId !== undefined ? dto.departmentId : undefined,
         status: dto.status !== undefined ? dto.status : undefined,
       },
     });
@@ -127,4 +138,3 @@ export class UsersService {
     return result;
   }
 }
-

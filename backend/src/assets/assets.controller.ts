@@ -1,4 +1,14 @@
-import { Controller, Post, Get, Patch, Delete, Param, Query, Body, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Patch,
+  Delete,
+  Param,
+  Query,
+  Body,
+  UseGuards,
+} from '@nestjs/common';
 import { AssetsService } from './assets.service';
 import { CreateAssetDto, UpdateAssetDto } from './dto/asset.dto';
 import { JwtAuthGuard, RolesGuard } from '../users/auth.guard';
@@ -24,7 +34,13 @@ export class AssetsController {
     @Query('location') location?: string,
     @Query('departmentId') departmentId?: string,
   ) {
-    return this.assetsService.findAll({ search, categoryId, status, location, departmentId });
+    return this.assetsService.findAll({
+      search,
+      categoryId,
+      status,
+      location,
+      departmentId,
+    });
   }
 
   @Get(':id')

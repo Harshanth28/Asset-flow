@@ -27,10 +27,7 @@ export class BookingsService {
         id: excludeBookingId ? { not: excludeBookingId } : undefined,
         status: { in: [BookingStatus.UPCOMING, BookingStatus.ONGOING] },
         // Overlap condition: newStart < existing.endTime AND newEnd > existing.startTime
-        AND: [
-          { startTime: { lt: newEnd } },
-          { endTime: { gt: newStart } },
-        ],
+        AND: [{ startTime: { lt: newEnd } }, { endTime: { gt: newStart } }],
       },
       include: {
         user: { select: { id: true, name: true } },
@@ -52,10 +49,14 @@ export class BookingsService {
 
   // ─── CREATE BOOKING ───────────────────────────────────────────────────────────
   async create(userId: string, dto: CreateBookingDto) {
-    const asset = await this.prisma.asset.findUnique({ where: { id: dto.assetId } });
+    const asset = await this.prisma.asset.findUnique({
+      where: { id: dto.assetId },
+    });
     if (!asset) throw new NotFoundException('Asset not found');
     if (!asset.isBookable) {
-      throw new BadRequestException('This asset is not marked as bookable/shared');
+      throw new BadRequestException(
+        'This asset is not marked as bookable/shared',
+      );
     }
 
     const newStart = new Date(dto.startTime);
@@ -81,7 +82,9 @@ export class BookingsService {
 
   // ─── GET BOOKINGS FOR AN ASSET (calendar view) ───────────────────────────────
   async findByAsset(assetId: string) {
-    const asset = await this.prisma.asset.findUnique({ where: { id: assetId } });
+    const asset = await this.prisma.asset.findUnique({
+      where: { id: assetId },
+    });
     if (!asset) throw new NotFoundException('Asset not found');
 
     return this.prisma.resourceBooking.findMany({
@@ -114,13 +117,19 @@ export class BookingsService {
     });
     if (!booking) throw new NotFoundException('Booking not found');
     if (booking.userId !== userId) {
-      throw new BadRequestException('You can only reschedule your own bookings');
+      throw new BadRequestException(
+        'You can only reschedule your own bookings',
+      );
     }
     if (booking.status !== BookingStatus.UPCOMING) {
-      throw new BadRequestException('Only upcoming bookings can be rescheduled');
+      throw new BadRequestException(
+        'Only upcoming bookings can be rescheduled',
+      );
     }
 
-    const newStart = dto.startTime ? new Date(dto.startTime) : booking.startTime;
+    const newStart = dto.startTime
+      ? new Date(dto.startTime)
+      : booking.startTime;
     const newEnd = dto.endTime ? new Date(dto.endTime) : booking.endTime;
 
     if (newEnd <= newStart) {
@@ -145,7 +154,10 @@ export class BookingsService {
     if (booking.userId !== userId) {
       throw new BadRequestException('You can only cancel your own bookings');
     }
-    if (booking.status === BookingStatus.COMPLETED || booking.status === BookingStatus.CANCELLED) {
+    if (
+      booking.status === BookingStatus.COMPLETED ||
+      booking.status === BookingStatus.CANCELLED
+    ) {
       throw new BadRequestException('Booking cannot be cancelled');
     }
 

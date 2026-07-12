@@ -18,8 +18,11 @@ export class AssetsService {
         tag,
         categoryId: dto.categoryId,
         serialNumber: dto.serialNumber || null,
-        acquisitionDate: dto.acquisitionDate ? new Date(dto.acquisitionDate) : new Date(),
-        acquisitionCost: dto.acquisitionCost !== undefined ? dto.acquisitionCost : 0.0,
+        acquisitionDate: dto.acquisitionDate
+          ? new Date(dto.acquisitionDate)
+          : new Date(),
+        acquisitionCost:
+          dto.acquisitionCost !== undefined ? dto.acquisitionCost : 0.0,
         condition: dto.condition || 'NEW',
         location: dto.location || null,
         isBookable: dto.isBookable || false,
@@ -56,7 +59,10 @@ export class AssetsService {
     }
 
     if (filters.location) {
-      whereClause.location = { contains: filters.location, mode: 'insensitive' };
+      whereClause.location = {
+        contains: filters.location,
+        mode: 'insensitive',
+      };
     }
 
     if (filters.departmentId) {
@@ -121,15 +127,21 @@ export class AssetsService {
       data: {
         name: dto.name !== undefined ? dto.name : undefined,
         categoryId: dto.categoryId !== undefined ? dto.categoryId : undefined,
-        serialNumber: dto.serialNumber !== undefined ? dto.serialNumber : undefined,
-        acquisitionDate: dto.acquisitionDate !== undefined ? new Date(dto.acquisitionDate) : undefined,
-        acquisitionCost: dto.acquisitionCost !== undefined ? dto.acquisitionCost : undefined,
+        serialNumber:
+          dto.serialNumber !== undefined ? dto.serialNumber : undefined,
+        acquisitionDate:
+          dto.acquisitionDate !== undefined
+            ? new Date(dto.acquisitionDate)
+            : undefined,
+        acquisitionCost:
+          dto.acquisitionCost !== undefined ? dto.acquisitionCost : undefined,
         condition: dto.condition !== undefined ? dto.condition : undefined,
         location: dto.location !== undefined ? dto.location : undefined,
         isBookable: dto.isBookable !== undefined ? dto.isBookable : undefined,
         status: dto.status !== undefined ? dto.status : undefined,
         photoUrl: dto.photoUrl !== undefined ? dto.photoUrl : undefined,
-        documentUrls: dto.documentUrls !== undefined ? dto.documentUrls : undefined,
+        documentUrls:
+          dto.documentUrls !== undefined ? dto.documentUrls : undefined,
       },
     });
   }

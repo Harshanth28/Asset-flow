@@ -23,6 +23,8 @@ export class CronService {
   @Cron('*/15 * * * *')
   async syncBookingStatuses() {
     const result = await this.bookingsService.syncBookingStatuses();
-    this.logger.log(`[CRON] Booking statuses synced: ${JSON.stringify(result)}`);
+    this.logger.log(
+      `[CRON] Booking statuses synced: ${JSON.stringify(result)}`,
+    );
   }
 }

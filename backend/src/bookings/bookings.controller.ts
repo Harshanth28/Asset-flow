@@ -1,4 +1,13 @@
-import { Controller, Post, Get, Patch, Delete, Param, Body, Req, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Patch,
+  Param,
+  Body,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { BookingsService } from './bookings.service';
 import { CreateBookingDto, UpdateBookingDto } from './dto/booking.dto';
 import { JwtAuthGuard } from '../users/auth.guard';
@@ -9,7 +18,7 @@ export class BookingsController {
   constructor(private readonly bookingsService: BookingsService) {}
 
   @Post()
-  create(@Req() req: any, @Body() dto: CreateBookingDto) {
+  create(@Req() req: { user: { sub: string } }, @Body() dto: CreateBookingDto) {
     return this.bookingsService.create(req.user.sub, dto);
   }
 
@@ -21,17 +30,21 @@ export class BookingsController {
 
   // Current user's bookings
   @Get('my')
-  findMyBookings(@Req() req: any) {
+  findMyBookings(@Req() req: { user: { sub: string } }) {
     return this.bookingsService.findMyBookings(req.user.sub);
   }
 
   @Patch(':id/reschedule')
-  reschedule(@Param('id') id: string, @Req() req: any, @Body() dto: UpdateBookingDto) {
+  reschedule(
+    @Param('id') id: string,
+    @Req() req: { user: { sub: string } },
+    @Body() dto: UpdateBookingDto,
+  ) {
     return this.bookingsService.reschedule(id, req.user.sub, dto);
   }
 
   @Patch(':id/cancel')
-  cancel(@Param('id') id: string, @Req() req: any) {
+  cancel(@Param('id') id: string, @Req() req: { user: { sub: string } }) {
     return this.bookingsService.cancel(id, req.user.sub);
   }
 }

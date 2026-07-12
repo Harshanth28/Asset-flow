@@ -1,6 +1,19 @@
-import { Controller, Post, Get, Patch, Param, Body, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Patch,
+  Param,
+  Body,
+  UseGuards,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
-import { CreateUserDto, LoginDto, PromoteUserDto, UpdateUserDto } from './dto/user.dto';
+import {
+  CreateUserDto,
+  LoginDto,
+  PromoteUserDto,
+  UpdateUserDto,
+} from './dto/user.dto';
 import { JwtAuthGuard, RolesGuard } from './auth.guard';
 import { Roles } from './roles.decorator';
 import { CurrentUser } from './current-user.decorator';
@@ -63,4 +76,3 @@ export class UsersController {
     return this.usersService.findOne(id);
   }
 }
-

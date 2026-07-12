@@ -28,7 +28,6 @@ export class AuditsService {
     });
   }
 
-
   // ─── GET ALL CYCLES ───────────────────────────────────────────────────────────
   async findAll() {
     return this.prisma.auditCycle.findMany({
@@ -60,7 +59,9 @@ export class AuditsService {
         },
         results: {
           include: {
-            asset: { select: { id: true, name: true, tag: true, status: true } },
+            asset: {
+              select: { id: true, name: true, tag: true, status: true },
+            },
           },
         },
       },
@@ -71,13 +72,19 @@ export class AuditsService {
 
   // ─── MARK AUDIT RESULT ────────────────────────────────────────────────────────
   async markResult(cycleId: string, dto: MarkAuditResultDto) {
-    const cycle = await this.prisma.auditCycle.findUnique({ where: { id: cycleId } });
+    const cycle = await this.prisma.auditCycle.findUnique({
+      where: { id: cycleId },
+    });
     if (!cycle) throw new NotFoundException('Audit cycle not found');
     if (cycle.status === AuditStatus.CLOSED) {
-      throw new BadRequestException('Cannot add results to a closed audit cycle');
+      throw new BadRequestException(
+        'Cannot add results to a closed audit cycle',
+      );
     }
 
-    const asset = await this.prisma.asset.findUnique({ where: { id: dto.assetId } });
+    const asset = await this.prisma.asset.findUnique({
+      where: { id: dto.assetId },
+    });
     if (!asset) throw new NotFoundException('Asset not found');
 
     // One result per asset per cycle — find existing or create new
@@ -104,7 +111,9 @@ export class AuditsService {
 
   // ─── GET DISCREPANCY REPORT ───────────────────────────────────────────────────
   async getDiscrepancyReport(cycleId: string) {
-    const cycle = await this.prisma.auditCycle.findUnique({ where: { id: cycleId } });
+    const cycle = await this.prisma.auditCycle.findUnique({
+      where: { id: cycleId },
+    });
     if (!cycle) throw new NotFoundException('Audit cycle not found');
 
     const flaggedResults = await this.prisma.auditResult.findMany({
@@ -113,7 +122,15 @@ export class AuditsService {
         status: { in: ['MISSING', 'DAMAGED'] },
       },
       include: {
-        asset: { select: { id: true, name: true, tag: true, status: true, location: true } },
+        asset: {
+          select: {
+            id: true,
+            name: true,
+            tag: true,
+            status: true,
+            location: true,
+          },
+        },
       },
     });
 

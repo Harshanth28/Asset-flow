@@ -37,4 +37,3 @@ import { CronModule } from './cron/cron.module';
   providers: [AppService],
 })
 export class AppModule {}
-

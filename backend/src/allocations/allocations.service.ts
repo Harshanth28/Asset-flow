@@ -3,10 +3,13 @@ import {
   NotFoundException,
   ConflictException,
   BadRequestException,
-  ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateAllocationDto, CreateTransferRequestDto, ReturnAssetDto } from './dto/allocation.dto';
+import {
+  CreateAllocationDto,
+  CreateTransferRequestDto,
+  ReturnAssetDto,
+} from './dto/allocation.dto';
 import { AssetStatus, AllocationStatus, TransferStatus } from '@prisma/client';
 
 @Injectable()
@@ -15,7 +18,9 @@ export class AllocationsService {
 
   // ─── ALLOCATE ────────────────────────────────────────────────────────────────
   async allocate(dto: CreateAllocationDto) {
-    const asset = await this.prisma.asset.findUnique({ where: { id: dto.assetId } });
+    const asset = await this.prisma.asset.findUnique({
+      where: { id: dto.assetId },
+    });
     if (!asset) throw new NotFoundException('Asset not found');
 
     // CONFLICT RULE: asset must be Available
@@ -23,7 +28,10 @@ export class AllocationsService {
       // Find who currently holds it
       const currentAllocation = await this.prisma.assetAllocation.findFirst({
         where: { assetId: dto.assetId, status: AllocationStatus.ACTIVE },
-        include: { employee: { select: { id: true, name: true } }, department: true },
+        include: {
+          employee: { select: { id: true, name: true } },
+          department: true,
+        },
       });
 
       throw new ConflictException({
@@ -40,7 +48,9 @@ export class AllocationsService {
         assetId: dto.assetId,
         employeeId: dto.employeeId || null,
         departmentId: dto.departmentId || null,
-        expectedReturnDate: dto.expectedReturnDate ? new Date(dto.expectedReturnDate) : null,
+        expectedReturnDate: dto.expectedReturnDate
+          ? new Date(dto.expectedReturnDate)
+          : null,
         status: AllocationStatus.ACTIVE,
       },
     });
@@ -134,11 +144,15 @@ export class AllocationsService {
 
   // ─── REQUEST TRANSFER ────────────────────────────────────────────────────────
   async requestTransfer(requesterId: string, dto: CreateTransferRequestDto) {
-    const asset = await this.prisma.asset.findUnique({ where: { id: dto.assetId } });
+    const asset = await this.prisma.asset.findUnique({
+      where: { id: dto.assetId },
+    });
     if (!asset) throw new NotFoundException('Asset not found');
 
     if (asset.status === AssetStatus.AVAILABLE) {
-      throw new BadRequestException('Asset is available — just allocate it directly');
+      throw new BadRequestException(
+        'Asset is available — just allocate it directly',
+      );
     }
 
     const existing = await this.prisma.transferRequest.findFirst({
@@ -148,7 +162,9 @@ export class AllocationsService {
       },
     });
     if (existing) {
-      throw new ConflictException('A pending transfer request already exists for this asset');
+      throw new ConflictException(
+        'A pending transfer request already exists for this asset',
+      );
     }
 
     return this.prisma.transferRequest.create({

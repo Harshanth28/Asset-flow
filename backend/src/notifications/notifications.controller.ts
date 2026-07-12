@@ -8,7 +8,7 @@ export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
   @Get()
-  findForUser(@Req() req: any) {
+  findForUser(@Req() req: { user: { sub: string } }) {
     return this.notificationsService.findForUser(req.user.sub);
   }
 
@@ -18,7 +18,7 @@ export class NotificationsController {
   }
 
   @Patch('read-all')
-  markAllRead(@Req() req: any) {
+  markAllRead(@Req() req: { user: { sub: string } }) {
     return this.notificationsService.markAllRead(req.user.sub);
   }
 }

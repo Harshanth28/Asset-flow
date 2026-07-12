@@ -8,4 +8,3 @@ import { BookingsService } from './bookings.service';
   exports: [BookingsService],
 })
 export class BookingsModule {}
-

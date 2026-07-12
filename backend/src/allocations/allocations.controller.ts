@@ -1,6 +1,19 @@
-import { Controller, Post, Get, Patch, Param, Body, Req, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Patch,
+  Param,
+  Body,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { AllocationsService } from './allocations.service';
-import { CreateAllocationDto, CreateTransferRequestDto, ReturnAssetDto } from './dto/allocation.dto';
+import {
+  CreateAllocationDto,
+  CreateTransferRequestDto,
+  ReturnAssetDto,
+} from './dto/allocation.dto';
 import { JwtAuthGuard, RolesGuard } from '../users/auth.guard';
 import { Roles } from '../users/roles.decorator';
 import { Role } from '@prisma/client';
@@ -40,7 +53,10 @@ export class AllocationsController {
 
   // Request a transfer (any authenticated user)
   @Post('transfers/request')
-  requestTransfer(@Req() req: any, @Body() dto: CreateTransferRequestDto) {
+  requestTransfer(
+    @Req() req: { user: { sub: string } },
+    @Body() dto: CreateTransferRequestDto,
+  ) {
     return this.allocationsService.requestTransfer(req.user.sub, dto);
   }
 

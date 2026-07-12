@@ -1,4 +1,8 @@
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateDepartmentDto, UpdateDepartmentDto } from './dto/department.dto';
 import { UserStatus, Role } from '@prisma/client';
@@ -98,8 +102,8 @@ export class DepartmentsService {
       where: { id },
       data: {
         name: dto.name !== undefined ? dto.name : undefined,
-        parentId: dto.parentId !== undefined ? (dto.parentId || null) : undefined,
-        headId: dto.headId !== undefined ? (dto.headId || null) : undefined,
+        parentId: dto.parentId !== undefined ? dto.parentId || null : undefined,
+        headId: dto.headId !== undefined ? dto.headId || null : undefined,
         status: dto.status !== undefined ? dto.status : undefined,
       },
     });

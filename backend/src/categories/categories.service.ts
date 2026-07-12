@@ -1,4 +1,8 @@
-import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCategoryDto, UpdateCategoryDto } from './dto/category.dto';
 
@@ -46,7 +50,8 @@ export class CategoriesService {
       where: { id },
       data: {
         name: dto.name !== undefined ? dto.name : undefined,
-        customFields: dto.customFields !== undefined ? dto.customFields : undefined,
+        customFields:
+          dto.customFields !== undefined ? dto.customFields : undefined,
       },
     });
   }

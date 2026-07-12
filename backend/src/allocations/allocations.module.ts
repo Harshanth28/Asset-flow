@@ -8,4 +8,3 @@ import { AllocationsService } from './allocations.service';
   exports: [AllocationsService],
 })
 export class AllocationsModule {}
-
