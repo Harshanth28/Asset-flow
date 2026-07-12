@@ -4,7 +4,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useAppDispatch } from '../store';
-import { setCredentials, type UserRole } from '../store/authSlice';
+import { setCredentials } from '../store/authSlice';
+import api from '../utils/api';
 import { KeyRound, Mail, ShieldAlert, ArrowRight, Eye, EyeOff } from 'lucide-react';
 
 const loginSchema = z.object({
@@ -35,57 +36,31 @@ const Login: React.FC = () => {
     setLoading(true);
 
     try {
-      // For demo / hackathon presentation, we mock the auth server check
-      // matching the pre-seeded accounts:
-      let role: UserRole = 'EMPLOYEE';
-      let name = 'User';
+      const res = await api.post('/users/login', {
+        email: data.email,
+        password: data.password,
+      });
 
-      if (data.email === 'admin@assetflow.com') {
-        role = 'ADMIN';
-        name = 'Alice Chen';
-      } else if (data.email === 'manager@assetflow.com') {
-        role = 'ASSET_MANAGER';
-        name = 'Sarah Connor';
-      } else if (data.email === 'priya@assetflow.com') {
-        role = 'DEPT_HEAD';
-        name = 'Priya Sharma';
-      } else if (data.email === 'raj@assetflow.com') {
-        role = 'EMPLOYEE';
-        name = 'Raj Patel';
-      } else {
-        // Fallback for newly signed up custom users from localStorage mock DB
-        const savedUsersRaw = localStorage.getItem('af_custom_users');
-        const customUsers = savedUsersRaw ? JSON.parse(savedUsersRaw) : [];
-        const matched = customUsers.find((u: any) => u.email === data.email && u.password === data.password);
-        
-        if (matched) {
-          role = matched.role;
-          name = matched.name;
-        } else {
-          throw new Error('Invalid email or password credentials.');
-        }
-      }
+      const { accessToken, user: userData } = res.data;
 
-      // Simulate a small network delay for realistic animations
-      setTimeout(() => {
-        dispatch(
-          setCredentials({
-            user: {
-              id: `usr-${role.toLowerCase()}-${Date.now().toString().slice(-4)}`,
-              name,
-              email: data.email,
-              role,
-              status: 'active',
-            },
-            token: 'mock-jwt-token-for-session',
-          })
-        );
-        setLoading(false);
-        navigate('/dashboard');
-      }, 800);
-
+      dispatch(
+        setCredentials({
+          user: {
+            id: userData.id,
+            name: userData.name,
+            email: userData.email,
+            role: userData.role.toUpperCase().replace('DEPARTMENT_HEAD', 'DEPT_HEAD'),
+            status: userData.status,
+          },
+          token: accessToken,
+        })
+      );
+      navigate('/dashboard');
     } catch (err: any) {
-      setError(err.message || 'Authentication failed. Please verify your credentials.');
+      const message =
+        err.response?.data?.message || 'Authentication failed. Please verify your credentials.';
+      setError(message);
+    } finally {
       setLoading(false);
     }
   };
