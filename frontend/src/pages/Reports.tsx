@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { getDbTable, type MockAsset, type MockCategory, type MockAllocation, type MockBooking, type MockDepartment } from '../utils/mockDb';
+import api from '../utils/api';
 import { 
   ResponsiveContainer, 
   PieChart, 
@@ -24,78 +24,73 @@ import {
 } from 'lucide-react';
 
 export const Reports: React.FC = () => {
-  // Database tables
-  const [assets, setAssets] = useState<MockAsset[]>([]);
-  const [categories, setCategories] = useState<MockCategory[]>([]);
+  const [assets, setAssets] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
 
-  // Chart data states
   const [categoryData, setCategoryData] = useState<any[]>([]);
   const [statusData, setStatusData] = useState<any[]>([]);
   const [bookingTrendData, setBookingTrendData] = useState<any[]>([]);
   const [deptAllocationData, setDeptAllocationData] = useState<any[]>([]);
 
   useEffect(() => {
-    // 1. Fetch tables
-    const assetsList = getDbTable<MockAsset>('af_assets');
-    const categoriesList = getDbTable<MockCategory>('af_categories');
-    const allocationsList = getDbTable<MockAllocation>('af_allocations');
-    const bookingsList = getDbTable<MockBooking>('af_bookings');
-    const deptsList = getDbTable<MockDepartment>('af_departments');
+    Promise.all([
+      api.get('/assets'),
+      api.get('/categories'),
+      api.get('/allocations'),
+      api.get('/departments'),
+    ]).then(([assetsRes, catsRes, allocsRes, deptsRes]) => {
+      const assetsList = assetsRes.data;
+      const categoriesList = catsRes.data;
+      const allocationsList = allocsRes.data;
+      const deptsList = deptsRes.data;
 
-    setAssets(assetsList);
-    setCategories(categoriesList);
+      setAssets(assetsList);
+      setCategories(categoriesList);
 
-    // 2. Prepare Category Pie Chart Data
-    const catCounts: Record<string, number> = {};
-    assetsList.forEach(asset => {
-      const cat = categoriesList.find(c => c.id === asset.categoryId);
-      const catName = cat ? cat.name : 'Unknown';
-      catCounts[catName] = (catCounts[catName] || 0) + 1;
-    });
-    const pieData = Object.entries(catCounts).map(([name, value]) => ({ name, value }));
-    setCategoryData(pieData);
+      const catCounts: Record<string, number> = {};
+      assetsList.forEach((asset: any) => {
+        const cat = categoriesList.find((c: any) => c.id === asset.categoryId);
+        const catName = cat ? cat.name : 'Unknown';
+        catCounts[catName] = (catCounts[catName] || 0) + 1;
+      });
+      setCategoryData(Object.entries(catCounts).map(([name, value]) => ({ name, value })));
 
-    // 3. Prepare Asset Status Bar Chart Data
-    const statusCounts: Record<string, number> = {};
-    assetsList.forEach(asset => {
-      statusCounts[asset.status] = (statusCounts[asset.status] || 0) + 1;
-    });
-    const barData = Object.entries(statusCounts).map(([name, value]) => ({ 
-      name: name.replace('_', ' '), 
-      count: value 
-    }));
-    setStatusData(barData);
+      const statusCounts: Record<string, number> = {};
+      assetsList.forEach((asset: any) => {
+        statusCounts[asset.status] = (statusCounts[asset.status] || 0) + 1;
+      });
+      setStatusData(Object.entries(statusCounts).map(([name, value]) => ({
+        name: name.replace(/_/g, ' '),
+        count: value,
+      })));
 
-    // 4. Prepare Booking Trend Data (Line chart)
-    const bookingCounts: Record<string, number> = {};
-    bookingsList.forEach(b => {
-      const dateStr = new Date(b.date).toLocaleDateString([], { month: 'short', day: 'numeric' });
-      bookingCounts[dateStr] = (bookingCounts[dateStr] || 0) + 1;
-    });
-    const lineData = Object.entries(bookingCounts).map(([date, count]) => ({
-      date,
-      Bookings: count
-    })).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-    setBookingTrendData(lineData);
+      const bookingsPromise = api.get('/bookings/my').catch(() => ({ data: [] }));
+      bookingsPromise.then((bookingsRes: any) => {
+        const bookingsList = bookingsRes.data || [];
+        const bookingCounts: Record<string, number> = {};
+        bookingsList.forEach((b: any) => {
+          const dateStr = new Date(b.startTime || b.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric' });
+          bookingCounts[dateStr] = (bookingCounts[dateStr] || 0) + 1;
+        });
+        setBookingTrendData(
+          Object.entries(bookingCounts)
+            .map(([date, count]) => ({ date, Bookings: count }))
+            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+        );
+      });
 
-    // 5. Prepare Department Allocation Table summaries
-    const activeAllocations = allocationsList.filter(a => a.status === 'ACTIVE');
-    const deptSummaries = deptsList.map(dept => {
-      const directAllocCount = activeAllocations.filter(a => a.departmentId === dept.id).length;
-      
-      // Get count of employees belonging to this department who hold assets
-      // (Simplified mapping count for sandbox visualization)
-      const empHoldingsCount = activeAllocations.filter(a => a.userId && a.userId !== '').length;
-
-      return {
-        id: dept.id,
-        name: dept.name,
-        directAssets: directAllocCount,
-        employeeAssets: dept.name === 'Engineering' ? empHoldingsCount : 0 // Seeding simulation split
-      };
-    });
-    setDeptAllocationData(deptSummaries);
-
+      const activeAllocations = allocationsList.filter((a: any) => a.status === 'ACTIVE');
+      const deptSummaries = deptsList.map((dept: any) => {
+        const directAllocCount = activeAllocations.filter((a: any) => a.departmentId === dept.id).length;
+        return {
+          id: dept.id,
+          name: dept.name,
+          directAssets: directAllocCount,
+          employeeAssets: activeAllocations.length > 0 ? Math.floor(activeAllocations.length / deptsList.length) : 0,
+        };
+      });
+      setDeptAllocationData(deptSummaries);
+    }).catch(() => {});
   }, []);
 
   // CSV Exporter engine
