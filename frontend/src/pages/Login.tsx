@@ -102,10 +102,11 @@ const Login: React.FC = () => {
               <label className="text-xs font-semibold text-muted-foreground">Email Address</label>
               <div className="relative">
                 <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-                <input
+                 <input
                   type="email"
                   placeholder="name@company.com"
                   {...register('email')}
+                  autoComplete="off"
                   className={`w-full bg-accent/20 border ${
                     errors.email ? 'border-destructive' : 'border-border'
                   } focus:border-primary/50 focus:ring-1 focus:ring-primary/30 rounded-xl py-3 pl-11 pr-4 text-sm outline-none transition-all`}
@@ -125,6 +126,7 @@ const Login: React.FC = () => {
                   type={showPassword ? 'text' : 'password'}
                   placeholder="••••••••"
                   {...register('password')}
+                  autoComplete="new-password"
                   className={`w-full bg-accent/20 border ${
                     errors.password ? 'border-destructive' : 'border-border'
                   } focus:border-primary/50 focus:ring-1 focus:ring-primary/30 rounded-xl py-3 pl-11 pr-10 text-sm outline-none transition-all`}

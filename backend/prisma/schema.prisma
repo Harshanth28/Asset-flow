@@ -4,8 +4,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"
+  url = "file:./dev.db"
 }
 
 enum Role {
@@ -83,7 +83,7 @@ enum AuditItemStatus {
 }
 
 model User {
-  id        String     @id @default(uuid()) @db.Uuid
+  id        String     @id @default(uuid()) 
   name      String
   email     String     @unique
   password  String
@@ -92,7 +92,7 @@ model User {
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 
-  departmentId     String?     @db.Uuid
+  departmentId     String?     
   department       Department? @relation("UserDepartment", fields: [departmentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   headedDepartment Department? @relation("DepartmentHead")
 
@@ -108,16 +108,16 @@ model User {
 }
 
 model Department {
-  id        String     @id @default(uuid()) @db.Uuid
+  id        String     @id @default(uuid()) 
   name      String     @unique
   status    UserStatus @default(ACTIVE)
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 
-  headId String? @unique @db.Uuid
+  headId String? @unique 
   head   User?   @relation("DepartmentHead", fields: [headId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  parentId String?      @db.Uuid
+  parentId String?      
   parent   Department?  @relation("DepartmentHierarchy", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
   children Department[] @relation("DepartmentHierarchy")
 
@@ -126,7 +126,7 @@ model Department {
 }
 
 model AssetCategory {
-  id           String   @id @default(uuid()) @db.Uuid
+  id           String   @id @default(uuid()) 
   name         String   @unique
   customFields Json?
   createdAt    DateTime @default(now())
@@ -136,7 +136,7 @@ model AssetCategory {
 }
 
 model Asset {
-  id              String         @id @default(uuid()) @db.Uuid
+  id              String         @id @default(uuid()) 
   name            String
   tag             String         @unique
   serialNumber    String?
@@ -147,11 +147,11 @@ model Asset {
   isBookable      Boolean        @default(false)
   status          AssetStatus    @default(AVAILABLE)
   photoUrl        String?
-  documentUrls    String[]
+  documentUrls    Json?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
-  categoryId String        @db.Uuid
+  categoryId String        
   category   AssetCategory @relation(fields: [categoryId], references: [id])
 
   allocations  AssetAllocation[]
@@ -162,12 +162,12 @@ model Asset {
 }
 
 model AssetAllocation {
-  id                 String           @id @default(uuid()) @db.Uuid
-  assetId            String           @db.Uuid
+  id                 String           @id @default(uuid()) 
+  assetId            String           
   asset              Asset            @relation(fields: [assetId], references: [id])
-  employeeId         String?          @db.Uuid
+  employeeId         String?          
   employee           User?            @relation(fields: [employeeId], references: [id])
-  departmentId       String?          @db.Uuid
+  departmentId       String?          
   department         Department?      @relation(fields: [departmentId], references: [id])
   assignedDate       DateTime         @default(now())
   expectedReturnDate DateTime?
@@ -179,12 +179,12 @@ model AssetAllocation {
 }
 
 model TransferRequest {
-  id             String         @id @default(uuid()) @db.Uuid
-  assetId        String         @db.Uuid
+  id             String         @id @default(uuid()) 
+  assetId        String         
   asset          Asset          @relation(fields: [assetId], references: [id])
-  fromEmployeeId String         @db.Uuid
+  fromEmployeeId String         
   fromEmployee   User           @relation("TransferFrom", fields: [fromEmployeeId], references: [id])
-  toEmployeeId   String         @db.Uuid
+  toEmployeeId   String         
   toEmployee     User           @relation("TransferTo", fields: [toEmployeeId], references: [id])
   status         TransferStatus @default(PENDING)
   createdAt      DateTime       @default(now())
@@ -192,10 +192,10 @@ model TransferRequest {
 }
 
 model ResourceBooking {
-  id        String        @id @default(uuid()) @db.Uuid
-  assetId   String        @db.Uuid
+  id        String        @id @default(uuid()) 
+  assetId   String        
   asset     Asset         @relation(fields: [assetId], references: [id])
-  userId    String        @db.Uuid
+  userId    String        
   user      User          @relation(fields: [userId], references: [id])
   startTime DateTime
   endTime   DateTime
@@ -205,10 +205,10 @@ model ResourceBooking {
 }
 
 model MaintenanceRequest {
-  id          String              @id @default(uuid()) @db.Uuid
-  assetId     String              @db.Uuid
+  id          String              @id @default(uuid()) 
+  assetId     String              
   asset       Asset               @relation(fields: [assetId], references: [id])
-  userId      String              @db.Uuid
+  userId      String              
   user        User                @relation(fields: [userId], references: [id])
   description String
   priority    MaintenancePriority @default(MEDIUM)
@@ -220,7 +220,7 @@ model MaintenanceRequest {
 }
 
 model AuditCycle {
-  id         String      @id @default(uuid()) @db.Uuid
+  id         String      @id @default(uuid()) 
   name       String
   scopeType  String
   scopeValue String
@@ -236,8 +236,8 @@ model AuditCycle {
 
 // Explicit join table for AuditCycle <-> User (auditors) many-to-many
 model AuditCycleAuditor {
-  auditCycleId String     @db.Uuid
-  userId       String     @db.Uuid
+  auditCycleId String     
+  userId       String     
   auditCycle   AuditCycle @relation(fields: [auditCycleId], references: [id])
   user         User       @relation(fields: [userId], references: [id])
 
@@ -245,10 +245,10 @@ model AuditCycleAuditor {
 }
 
 model AuditResult {
-  id           String          @id @default(uuid()) @db.Uuid
-  auditCycleId String          @db.Uuid
+  id           String          @id @default(uuid()) 
+  auditCycleId String          
   auditCycle   AuditCycle      @relation(fields: [auditCycleId], references: [id])
-  assetId      String          @db.Uuid
+  assetId      String          
   asset        Asset           @relation(fields: [assetId], references: [id])
   status       AuditItemStatus @default(VERIFIED)
   notes        String?
@@ -257,8 +257,8 @@ model AuditResult {
 }
 
 model Notification {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @db.Uuid
+  id        String   @id @default(uuid()) 
+  userId    String   
   user      User     @relation(fields: [userId], references: [id])
   title     String
   message   String
@@ -267,8 +267,8 @@ model Notification {
 }
 
 model ActivityLog {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @db.Uuid
+  id        String   @id @default(uuid()) 
+  userId    String   
   user      User     @relation(fields: [userId], references: [id])
   action    String
   details   String
