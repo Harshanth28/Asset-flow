@@ -9,7 +9,7 @@ This blueprint details the implementation plan for the **Odoo AssetFlow** applic
 We will structure the project into two main directories:
 ```
 /
-├── backend/            # NestJS API, Prisma, PostgreSQL
+├── backend/            # NestJS API, Prisma, MongoDB
 └── frontend/           # React + TypeScript + Vite + Tailwind + shadcn/ui
 ```
 
@@ -20,7 +20,7 @@ We will structure the project into two main directories:
 ### Backend (`/backend`)
 - **Framework**: NestJS (Modular structure: `users`, `assets`, `bookings`, `allocations`, `maintenance`, `audits`, `departments`)
 - **ORM**: Prisma
-- **Database**: PostgreSQL (Users, Roles, Departments, Categories, Assets, Allocations, Transfers, Bookings, Maintenance, Audits, AuditResults, Notifications, Logs)
+- **Database**: MongoDB (Users, Roles, Departments, Categories, Assets, Allocations, Transfers, Bookings, Maintenance, Audits, AuditResults, Notifications, Logs)
 - **Auth**: JWT Authentication + bcrypt password hashing
 - **Real-time**: Socket.IO for notifications
 - **Jobs**: `node-cron` for overdue return checks and booking reminders
@@ -37,12 +37,12 @@ We will structure the project into two main directories:
 
 ## 3. Database Schema (Prisma `schema.prisma`)
 
-We will define models matching the requested structure:
+We will define models matching the requested structure using MongoDB-compatible structures (such as string ObjectIds with `@map("_id") @db.ObjectId` annotations):
 1. `User` & `Role` (Employee, Admin, Asset Manager, Department Head)
 2. `Department` (hierarchical relationship)
-3. `AssetCategory` (custom fields supported via JSON fields)
+3. `AssetCategory` (custom fields supported via JSON/embedded documents)
 4. `Asset` (auto-generated code sequence prefix `AF-`)
-5. `AssetAllocation` & `TransferRequest` (conflict control rules enforced at the database level)
+5. `AssetAllocation` & `TransferRequest` (conflict control rules enforced at the database/API level)
 6. `ResourceBooking` (overlap validation constraints)
 7. `MaintenanceRequest` (asset status transitions from Available -> Maintenance -> Available)
 8. `AuditCycle` & `AuditResult` (auditing verification runs)
@@ -54,8 +54,8 @@ We will define models matching the requested structure:
 
 ### Phase 1: Backend Setup
 1. Initialize NestJS application in `/backend`.
-2. Configure Prisma with PostgreSQL connection string.
-3. Design and migrate the database schema.
+2. Configure Prisma with MongoDB connection string.
+3. Design and generate the database schema using Prisma `db pull`/`db push`.
 4. Implement JWT authentication and role-based guards (`@Roles('admin')`).
 5. Develop REST API modules:
    - Organization (Departments, Categories, Employee Promotion)
@@ -84,3 +84,4 @@ We will define models matching the requested structure:
 ### Manual Verification
 - Visual inspection of all 10 screens.
 - Multi-role simulation checks to verify role-based layouts (Admin vs Employee).
+

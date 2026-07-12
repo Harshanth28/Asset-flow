@@ -2,13 +2,13 @@
 
 ## [ ] Backend Setup (`/backend`)
 - [ ] Initialize NestJS project
-- [ ] Install Prisma, configure PostgreSQL connection
+- [ ] Install Prisma, configure MongoDB connection
 - [ ] Create Database Schema (`schema.prisma`)
   - [ ] User, Role, Department models
   - [ ] Category, Asset, Allocation, Transfer models
   - [ ] Booking, Maintenance, Audit models
   - [ ] Notification, Log models
-- [ ] Run Prisma migrations & seed database
+- [ ] Run Prisma schema push & seed database
 - [ ] Implement JWT Authentication and Guard roles
 - [ ] Build modules:
   - [ ] Organization (Departments & Employees Setup)
