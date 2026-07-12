@@ -1,13 +1,13 @@
 # Odoo AssetFlow Task List
 
-## [ ] Backend Setup (`/backend`)
-- [ ] Initialize NestJS project
-- [ ] Install Prisma, configure MongoDB connection
-- [ ] Create Database Schema (`schema.prisma`)
-  - [ ] User, Role, Department models
-  - [ ] Category, Asset, Allocation, Transfer models
-  - [ ] Booking, Maintenance, Audit models
-  - [ ] Notification, Log models
+## [x] Backend Setup (`/backend`)
+- [x] Initialize NestJS project
+- [x] Install Prisma, configure MongoDB connection
+- [x] Create Database Schema (`schema.prisma`)
+  - [x] User, Role, Department models
+  - [x] Category, Asset, Allocation, Transfer models
+  - [x] Booking, Maintenance, Audit models
+  - [x] Notification, Log models
 - [ ] Run Prisma schema push & seed database
 - [ ] Implement JWT Authentication and Guard roles
 - [ ] Build modules:
@@ -37,3 +37,4 @@
   - [ ] Screen 9: Reports & Analytics (Charts & peak usage heatmaps)
   - [ ] Screen 10: Logs & Notifications (Event feeds)
 - [ ] Integrate API calls and state management
+

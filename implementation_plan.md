@@ -22,7 +22,7 @@ We will structure the project into two main directories:
 - **ORM**: Prisma
 - **Database**: MongoDB (Users, Roles, Departments, Categories, Assets, Allocations, Transfers, Bookings, Maintenance, Audits, AuditResults, Notifications, Logs)
 - **Auth**: JWT Authentication + bcrypt password hashing
-- **Real-time**: Socket.IO for notifications
+- **Real-time**: 9t.IO for notifications
 - **Jobs**: `node-cron` for overdue return checks and booking reminders
 
 ### Frontend (`/frontend`)

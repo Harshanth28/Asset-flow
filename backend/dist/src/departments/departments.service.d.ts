@@ -1,0 +1,95 @@
+import { PrismaService } from '../prisma/prisma.service';
+import { CreateDepartmentDto, UpdateDepartmentDto } from './dto/department.dto';
+export declare class DepartmentsService {
+    private prisma;
+    constructor(prisma: PrismaService);
+    create(dto: CreateDepartmentDto): Promise<{
+        name: string;
+        status: import("@prisma/client").$Enums.UserStatus;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        headId: string | null;
+        parentId: string | null;
+    }>;
+    findAll(): Promise<({
+        head: {
+            name: string;
+            email: string;
+            id: string;
+        } | null;
+        parent: {
+            name: string;
+            id: string;
+        } | null;
+        children: {
+            name: string;
+            id: string;
+        }[];
+    } & {
+        name: string;
+        status: import("@prisma/client").$Enums.UserStatus;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        headId: string | null;
+        parentId: string | null;
+    })[]>;
+    findOne(id: string): Promise<{
+        head: {
+            name: string;
+            email: string;
+            id: string;
+        } | null;
+        parent: {
+            name: string;
+            status: import("@prisma/client").$Enums.UserStatus;
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            headId: string | null;
+            parentId: string | null;
+        } | null;
+        children: {
+            name: string;
+            status: import("@prisma/client").$Enums.UserStatus;
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            headId: string | null;
+            parentId: string | null;
+        }[];
+        employees: {
+            name: string;
+            email: string;
+            role: import("@prisma/client").$Enums.Role;
+            id: string;
+        }[];
+    } & {
+        name: string;
+        status: import("@prisma/client").$Enums.UserStatus;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        headId: string | null;
+        parentId: string | null;
+    }>;
+    update(id: string, dto: UpdateDepartmentDto): Promise<{
+        name: string;
+        status: import("@prisma/client").$Enums.UserStatus;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        headId: string | null;
+        parentId: string | null;
+    }>;
+    deactivate(id: string): Promise<{
+        name: string;
+        status: import("@prisma/client").$Enums.UserStatus;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        headId: string | null;
+        parentId: string | null;
+    }>;
+}
