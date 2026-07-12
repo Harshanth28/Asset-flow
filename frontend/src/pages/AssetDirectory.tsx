@@ -496,7 +496,7 @@ export const AssetDirectory: React.FC = () => {
                 </label>
               </div>
 
-              {activeCategory && activeCategory.customFields.length > 0 && (
+              {activeCategory && Array.isArray(activeCategory.customFields) && activeCategory.customFields.length > 0 && (
                 <div className="col-span-full border-t border-border/50 pt-4 mt-2 space-y-3">
                   <h4 className="text-[11px] font-bold text-primary tracking-wide uppercase">
                     Category Specific attributes ({activeCategory.name})

@@ -394,12 +394,12 @@ export const OrgSetup: React.FC = () => {
                     <tr key={cat.id} className="hover:bg-accent/10">
                       <td className="py-3.5 font-bold text-foreground">{cat.name}</td>
                       <td className="py-3.5 text-muted-foreground flex flex-wrap gap-1">
-                        {cat.customFields.length === 0 ? (
+                        {!Array.isArray(cat.customFields) || cat.customFields.length === 0 ? (
                           <span className="text-[10px] text-muted-foreground font-medium">Standard attributes only</span>
                         ) : (
                           cat.customFields.map((f, i) => (
                             <span key={i} className="px-2 py-0.5 rounded bg-accent/20 border border-border/40 text-[9px] font-bold text-foreground">
-                              {f}
+                              {String(f)}
                             </span>
                           ))
                         )}
