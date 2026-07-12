@@ -6,26 +6,28 @@ export class ReportsService {
   constructor(private prisma: PrismaService) {}
 
   async getUtilization() {
-    const assets = await this.prisma.asset.findMany({
-      select: {
-        id: true,
-        name: true,
-        tag: true,
-        status: true,
-        categoryId: true,
-        category: { select: { name: true } },
-      },
-    });
+    const [statusCounts, categoryCounts, categories] = await Promise.all([
+      this.prisma.asset.groupBy({
+        by: ['status'],
+        _count: { _all: true },
+      }),
+      this.prisma.asset.groupBy({
+        by: ['categoryId'],
+        _count: { _all: true },
+      }),
+      this.prisma.assetCategory.findMany({
+        select: { id: true, name: true },
+      }),
+    ]);
 
-    const total = assets.length;
-    const allocated = assets.filter(a => a.status === 'ALLOCATED').length;
-    const available = assets.filter(a => a.status === 'AVAILABLE').length;
-    const maintenance = assets.filter(a => a.status === 'UNDER_MAINTENANCE').length;
+    const total = statusCounts.reduce((sum, curr) => sum + curr._count._all, 0);
+    const allocated = statusCounts.find(s => s.status === 'ALLOCATED')?._count._all || 0;
+    const available = statusCounts.find(s => s.status === 'AVAILABLE')?._count._all || 0;
+    const maintenance = statusCounts.find(s => s.status === 'UNDER_MAINTENANCE')?._count._all || 0;
 
-    const categoryBreakdown = assets.reduce((acc, a) => {
-      const cat = a.category?.name || 'Uncategorized';
-      if (!acc[cat]) acc[cat] = 0;
-      acc[cat]++;
+    const categoryBreakdown = categories.reduce((acc, cat) => {
+      const countObj = categoryCounts.find(c => c.categoryId === cat.id);
+      acc[cat.name] = countObj ? countObj._count._all : 0;
       return acc;
     }, {} as Record<string, number>);
 

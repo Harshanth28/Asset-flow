@@ -8,9 +8,20 @@ export class AssetsService {
   constructor(private prisma: PrismaService) {}
 
   async create(dto: CreateAssetDto) {
-    // Generate next tag AF-XXXX
-    const count = await this.prisma.asset.count();
-    const tag = `AF-${String(count + 1).padStart(4, '0')}`;
+    // Generate next tag AF-XXXX using the latest sequential tag to avoid collisions and count overhead
+    const lastAsset = await this.prisma.asset.findFirst({
+      orderBy: { tag: 'desc' },
+      select: { tag: true },
+    });
+
+    let nextNum = 1;
+    if (lastAsset && lastAsset.tag) {
+      const match = lastAsset.tag.match(/^AF-(\d+)$/);
+      if (match) {
+        nextNum = parseInt(match[1], 10) + 1;
+      }
+    }
+    const tag = `AF-${String(nextNum).padStart(4, '0')}`;
 
     return this.prisma.asset.create({
       data: {
