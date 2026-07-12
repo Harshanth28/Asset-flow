@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateAssetDto, UpdateAssetDto } from './dto/asset.dto';
-import { AssetStatus } from '@prisma/client';
+import { AssetStatus, Prisma } from '@prisma/client';
 
 @Injectable()
 export class AssetsService {
@@ -51,7 +51,7 @@ export class AssetsService {
     location?: string;
     departmentId?: string;
   }) {
-    const whereClause: any = {};
+    const whereClause: Prisma.AssetWhereInput = {};
 
     if (filters.search) {
       whereClause.OR = [

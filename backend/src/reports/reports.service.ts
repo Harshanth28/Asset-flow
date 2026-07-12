@@ -21,15 +21,22 @@ export class ReportsService {
     ]);
 
     const total = statusCounts.reduce((sum, curr) => sum + curr._count._all, 0);
-    const allocated = statusCounts.find(s => s.status === 'ALLOCATED')?._count._all || 0;
-    const available = statusCounts.find(s => s.status === 'AVAILABLE')?._count._all || 0;
-    const maintenance = statusCounts.find(s => s.status === 'UNDER_MAINTENANCE')?._count._all || 0;
+    const allocated =
+      statusCounts.find((s) => s.status === 'ALLOCATED')?._count._all || 0;
+    const available =
+      statusCounts.find((s) => s.status === 'AVAILABLE')?._count._all || 0;
+    const maintenance =
+      statusCounts.find((s) => s.status === 'UNDER_MAINTENANCE')?._count._all ||
+      0;
 
-    const categoryBreakdown = categories.reduce((acc, cat) => {
-      const countObj = categoryCounts.find(c => c.categoryId === cat.id);
-      acc[cat.name] = countObj ? countObj._count._all : 0;
-      return acc;
-    }, {} as Record<string, number>);
+    const categoryBreakdown = categories.reduce(
+      (acc, cat) => {
+        const countObj = categoryCounts.find((c) => c.categoryId === cat.id);
+        acc[cat.name] = countObj ? countObj._count._all : 0;
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
 
     return { total, allocated, available, maintenance, categoryBreakdown };
   }

@@ -41,8 +41,8 @@ export class UsersService {
       },
     });
 
-    const { password, ...result } = user;
-    return result;
+    delete (user as { password?: string }).password;
+    return user;
   }
 
   async login(dto: LoginDto) {
@@ -84,8 +84,8 @@ export class UsersService {
       data: { role: dto.role },
     });
 
-    const { password, ...result } = updatedUser;
-    return result;
+    delete (updatedUser as { password?: string }).password;
+    return updatedUser;
   }
 
   async update(id: string, dto: UpdateUserDto) {
@@ -102,8 +102,8 @@ export class UsersService {
       },
     });
 
-    const { password, ...result } = updated;
-    return result;
+    delete (updated as { password?: string }).password;
+    return updated;
   }
 
   async deactivate(id: string) {
@@ -134,7 +134,7 @@ export class UsersService {
       include: { department: true },
     });
     if (!user) throw new NotFoundException('User not found');
-    const { password, ...result } = user;
-    return result;
+    delete (user as { password?: string }).password;
+    return user;
   }
 }
