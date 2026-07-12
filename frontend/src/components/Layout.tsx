@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '../store';
 import { logout } from '../store/authSlice';
 import { setNotifications } from '../store/notificationSlice';
-import { getDbTable } from '../utils/mockDb';
+import api from '../utils/api';
 import { 
   LayoutDashboard, 
   Settings, 
@@ -32,8 +32,9 @@ export const Layout: React.FC = () => {
   const [showNotifications, setShowNotifications] = useState(false);
 
   useEffect(() => {
-    const saved = getDbTable<any>('af_notifications');
-    dispatch(setNotifications(saved));
+    api.get('/notifications').then(res => {
+      dispatch(setNotifications(res.data));
+    }).catch(() => {});
   }, [dispatch]);
 
   const handleLogout = () => {
