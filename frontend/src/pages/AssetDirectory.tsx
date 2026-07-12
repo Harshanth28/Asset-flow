@@ -1,14 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAppSelector } from '../store';
-import { 
-  getDbTable, 
-  saveDbTable, 
-  type MockAsset, 
-  type MockCategory, 
-  type MockAllocation, 
-  type MockMaintenance,
-  type MockUser
-} from '../utils/mockDb';
+import api from '../utils/api';
 import { 
   Plus, 
   Search, 
@@ -21,50 +13,98 @@ import {
   ScanLine
 } from 'lucide-react';
 
+interface Asset {
+  id: string;
+  tag: string;
+  name: string;
+  categoryId: string;
+  serialNumber: string;
+  acquisitionDate: string;
+  acquisitionCost: number;
+  condition: string;
+  location: string;
+  isBookable: boolean;
+  status: string;
+  meta?: Record<string, string>;
+}
+
+interface Category {
+  id: string;
+  name: string;
+  customFields: string[];
+  status: string;
+}
+
+interface Allocation {
+  id: string;
+  assetId: string;
+  userId?: string;
+  departmentId?: string;
+  expectedReturnDate?: string;
+  actualReturnDate?: string;
+  conditionOnReturn?: string;
+  status: string;
+  createdAt: string;
+}
+
+interface Maintenance {
+  id: string;
+  assetId: string;
+  issue: string;
+  priority: string;
+  status: string;
+  technicianName?: string;
+  raisedById: string;
+  createdAt: string;
+}
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  departmentId?: string;
+  status: string;
+}
+
 export const AssetDirectory: React.FC = () => {
   const { activeRole } = useAppSelector((state) => state.auth);
 
-  // Database lists
-  const [assets, setAssets] = useState<MockAsset[]>([]);
-  const [categories, setCategories] = useState<MockCategory[]>([]);
-  const [allocations, setAllocations] = useState<MockAllocation[]>([]);
-  const [maintenance, setMaintenance] = useState<MockMaintenance[]>([]);
-  const [users, setUsers] = useState<MockUser[]>([]);
+  const [assets, setAssets] = useState<Asset[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [allocations, setAllocations] = useState<Allocation[]>([]);
+  const [maintenance, setMaintenance] = useState<Maintenance[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
 
-  // Search/Filter states
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
   const [selectedLocation, setSelectedLocation] = useState('');
 
-  // UI Drawer / Panels
   const [showAddForm, setShowAddForm] = useState(false);
-  const [selectedAsset, setSelectedAsset] = useState<MockAsset | null>(null);
+  const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
   const [showScanner, setShowScanner] = useState(false);
   const [scanTagInput, setScanTagInput] = useState('');
 
-  // Form states
   const [name, setName] = useState('');
   const [catId, setCatId] = useState('');
   const [serial, setSerial] = useState('');
   const [acquisitionDate, setAcquisitionDate] = useState('');
   const [acquisitionCost, setAcquisitionCost] = useState('');
-  const [condition, setCondition] = useState<'Excellent' | 'Good' | 'Fair' | 'Poor'>('Excellent');
+  const [condition, setCondition] = useState('NEW');
   const [location, setLocation] = useState('');
   const [isBookable, setIsBookable] = useState(false);
   const [metaFields, setMetaFields] = useState<Record<string, string>>({});
 
-  // Feedback states
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Load database tables
   const loadTables = () => {
-    setAssets(getDbTable<MockAsset>('af_assets'));
-    setCategories(getDbTable<MockCategory>('af_categories'));
-    setAllocations(getDbTable<MockAllocation>('af_allocations'));
-    setMaintenance(getDbTable<MockMaintenance>('af_maintenance'));
-    setUsers(getDbTable<MockUser>('af_users'));
+    api.get<Asset[]>('/assets').then(res => setAssets(res.data)).catch(() => {});
+    api.get<Category[]>('/categories').then(res => setCategories(res.data)).catch(() => {});
+    api.get<Allocation[]>('/allocations').then(res => setAllocations(res.data)).catch(() => {});
+    api.get<Maintenance[]>('/maintenance').then(res => setMaintenance(res.data)).catch(() => {});
+    api.get<User[]>('/users/directory').then(res => setUsers(res.data)).catch(() => {});
   };
 
   useEffect(() => {
@@ -76,7 +116,6 @@ export const AssetDirectory: React.FC = () => {
     setSuccess(null);
   };
 
-  // Watch category select on creation form to setup custom fields input
   const activeCategory = categories.find(c => c.id === catId);
 
   const handleMetaFieldChange = (key: string, value: string) => {
@@ -86,7 +125,6 @@ export const AssetDirectory: React.FC = () => {
     });
   };
 
-  // Create registration
   const handleRegisterAsset = (e: React.FormEvent) => {
     e.preventDefault();
     clearFeedbacks();
@@ -96,60 +134,34 @@ export const AssetDirectory: React.FC = () => {
       return;
     }
 
-    // Check unique serial number
-    if (assets.some(a => a.serialNumber.toLowerCase() === serial.trim().toLowerCase())) {
-      setError('An asset with this Serial Number already exists.');
-      return;
-    }
-
-    // Calculate sequential asset tag sequence
-    const nextSeqNumber = assets.length + 1;
-    const assetTag = `AF-${nextSeqNumber.toString().padStart(4, '0')}`;
-
-    const newAsset: MockAsset = {
-      id: `asset-${Date.now().toString().slice(-4)}`,
-      tag: assetTag,
+    api.post('/assets', {
       name: name.trim(),
-      categoryId: catId,
       serialNumber: serial.trim(),
       acquisitionDate,
       acquisitionCost: parseFloat(acquisitionCost),
       condition,
       location: location.trim(),
       isBookable,
-      status: 'AVAILABLE',
+      categoryId: catId,
       meta: metaFields,
-    };
-
-    // Save to database
-    const updated = [...assets, newAsset];
-    saveDbTable('af_assets', updated);
-
-    // Save activity log
-    const logs = getDbTable<any>('af_logs');
-    logs.unshift({
-      id: `log-${Date.now()}`,
-      action: 'REGISTER',
-      details: `Registered new asset ${name} (${assetTag}) in location ${location}.`,
-      createdAt: new Date().toISOString()
+    }).then(() => {
+      setSuccess('Asset successfully registered.');
+      setName('');
+      setCatId('');
+      setSerial('');
+      setAcquisitionDate('');
+      setAcquisitionCost('');
+      setCondition('NEW');
+      setLocation('');
+      setIsBookable(false);
+      setMetaFields({});
+      setShowAddForm(false);
+      loadTables();
+    }).catch(err => {
+      setError(err.response?.data?.message || 'Failed to register asset.');
     });
-    saveDbTable('af_logs', logs);
-
-    setSuccess(`Asset ${assetTag} successfully registered as AVAILABLE.`);
-    setName('');
-    setCatId('');
-    setSerial('');
-    setAcquisitionDate('');
-    setAcquisitionCost('');
-    setCondition('Excellent');
-    setLocation('');
-    setIsBookable(false);
-    setMetaFields({});
-    setShowAddForm(false);
-    loadTables();
   };
 
-  // QR Code Simulator scanner
   const handleSimulateScan = (e: React.FormEvent) => {
     e.preventDefault();
     clearFeedbacks();
@@ -168,7 +180,6 @@ export const AssetDirectory: React.FC = () => {
     }
   };
 
-  // Filter Assets List
   const filteredAssets = assets.filter(asset => {
     const matchesSearch = 
       asset.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -182,7 +193,6 @@ export const AssetDirectory: React.FC = () => {
     return matchesSearch && matchesCategory && matchesStatus && matchesLocation;
   });
 
-  // Calculate detailed allocation history + maintenance logs for selected asset panel
   const selectedAssetAllocations = allocations
     .filter(a => a.assetId === selectedAsset?.id)
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -193,7 +203,6 @@ export const AssetDirectory: React.FC = () => {
 
   return (
     <div className="space-y-6 relative">
-      {/* Page Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight">Asset Directory</h1>
@@ -202,9 +211,7 @@ export const AssetDirectory: React.FC = () => {
           </p>
         </div>
 
-        {/* Buttons */}
         <div className="flex gap-2 w-full sm:w-auto">
-          {/* Mock Scanner Trigger */}
           <button
             onClick={() => { setShowScanner(true); clearFeedbacks(); }}
             className="flex-1 sm:flex-none py-2.5 px-4 rounded-xl bg-accent/25 border border-border/80 text-foreground text-xs font-bold flex items-center justify-center gap-2 hover:bg-accent/40 transition-all"
@@ -213,7 +220,6 @@ export const AssetDirectory: React.FC = () => {
             <span>Scan QR Code</span>
           </button>
 
-          {/* Asset Registration Trigger (Admin/Manager only) */}
           {(activeRole === 'ADMIN' || activeRole === 'ASSET_MANAGER') && (
             <button
               onClick={() => { setShowAddForm(true); clearFeedbacks(); }}
@@ -226,7 +232,6 @@ export const AssetDirectory: React.FC = () => {
         </div>
       </div>
 
-      {/* Feedbacks */}
       {error && (
         <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs flex items-center gap-2">
           <AlertCircle size={16} />
@@ -240,9 +245,7 @@ export const AssetDirectory: React.FC = () => {
         </div>
       )}
 
-      {/* Filter and Search Bar */}
       <div className="glass-panel p-4 rounded-2xl border border-white/5 grid grid-cols-1 md:grid-cols-4 gap-3">
-        {/* Search text input */}
         <div className="relative">
           <Search className="absolute left-3.5 top-3 w-4 h-4 text-muted-foreground" />
           <input
@@ -254,7 +257,6 @@ export const AssetDirectory: React.FC = () => {
           />
         </div>
 
-        {/* Category Filter */}
         <select
           value={selectedCategory}
           onChange={(e) => setSelectedCategory(e.target.value)}
@@ -266,7 +268,6 @@ export const AssetDirectory: React.FC = () => {
           ))}
         </select>
 
-        {/* Lifecycle Status Filter */}
         <select
           value={selectedStatus}
           onChange={(e) => setSelectedStatus(e.target.value)}
@@ -282,7 +283,6 @@ export const AssetDirectory: React.FC = () => {
           <option value="DISPOSED">DISPOSED</option>
         </select>
 
-        {/* Location filter */}
         <input
           type="text"
           placeholder="Filter by Location..."
@@ -292,7 +292,6 @@ export const AssetDirectory: React.FC = () => {
         />
       </div>
 
-      {/* Directory Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredAssets.length === 0 ? (
           <div className="col-span-full text-center py-20 text-xs text-muted-foreground glass-panel rounded-2xl">
@@ -340,7 +339,6 @@ export const AssetDirectory: React.FC = () => {
         )}
       </div>
 
-      {/* --- MOCK SCANNER POPUP MODAL --- */}
       {showScanner && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center px-4 animate-in fade-in">
           <div className="glass-panel w-full max-w-sm rounded-2xl p-6 border border-white/10 space-y-4">
@@ -354,18 +352,14 @@ export const AssetDirectory: React.FC = () => {
               </button>
             </div>
             
-            {/* Viewfinder block */}
             <div className="relative w-full h-36 bg-black/40 rounded-xl border border-white/5 flex items-center justify-center overflow-hidden">
-              {/* Corner crosshairs */}
               <span className="absolute top-2 left-2 w-3.5 h-3.5 border-t-2 border-l-2 border-primary"></span>
               <span className="absolute top-2 right-2 w-3.5 h-3.5 border-t-2 border-r-2 border-primary"></span>
               <span className="absolute bottom-2 left-2 w-3.5 h-3.5 border-b-2 border-l-2 border-primary"></span>
               <span className="absolute bottom-2 right-2 w-3.5 h-3.5 border-b-2 border-r-2 border-primary"></span>
               
-              {/* Laser sweep line */}
               <div className="laser-scan-line"></div>
 
-              {/* Pulsing visual QR icon */}
               <QrCode size={44} className="text-primary/20 animate-pulse" />
             </div>
 
@@ -394,7 +388,6 @@ export const AssetDirectory: React.FC = () => {
         </div>
       )}
 
-      {/* --- ASSET REGISTRATION MODAL DRAWER --- */}
       {showAddForm && (
         <div className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto animate-in fade-in">
           <div className="glass-panel w-full max-w-xl rounded-2xl p-6 border border-white/10 space-y-4 my-8">
@@ -407,7 +400,6 @@ export const AssetDirectory: React.FC = () => {
 
             <form onSubmit={handleRegisterAsset} className="grid grid-cols-1 md:grid-cols-2 gap-4">
               
-              {/* Asset Name */}
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-muted-foreground uppercase">Asset Name</label>
                 <input
@@ -419,7 +411,6 @@ export const AssetDirectory: React.FC = () => {
                 />
               </div>
 
-              {/* Category Select */}
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-muted-foreground uppercase">Asset Category</label>
                 <select
@@ -434,7 +425,6 @@ export const AssetDirectory: React.FC = () => {
                 </select>
               </div>
 
-              {/* Serial Number */}
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-muted-foreground uppercase">Serial Number</label>
                 <input
@@ -446,7 +436,6 @@ export const AssetDirectory: React.FC = () => {
                 />
               </div>
 
-              {/* Cost */}
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-muted-foreground uppercase">Acquisition Cost ($)</label>
                 <input
@@ -458,7 +447,6 @@ export const AssetDirectory: React.FC = () => {
                 />
               </div>
 
-              {/* Date */}
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-muted-foreground uppercase">Acquisition Date</label>
                 <input
@@ -469,7 +457,6 @@ export const AssetDirectory: React.FC = () => {
                 />
               </div>
 
-              {/* Location */}
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-muted-foreground uppercase">Physical Location</label>
                 <input
@@ -481,22 +468,21 @@ export const AssetDirectory: React.FC = () => {
                 />
               </div>
 
-              {/* Condition */}
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-muted-foreground uppercase">Current Condition</label>
                 <select
                   value={condition}
-                  onChange={(e: any) => setCondition(e.target.value)}
+                  onChange={(e) => setCondition(e.target.value)}
                   className="w-full bg-accent/20 border border-border/80 focus:border-primary/50 focus:ring-1 focus:ring-primary/20 rounded-xl py-2 px-3.5 text-xs outline-none transition-all text-muted-foreground"
                 >
-                  <option value="Excellent">Excellent</option>
-                  <option value="Good">Good</option>
-                  <option value="Fair">Fair</option>
-                  <option value="Poor">Poor</option>
+                  <option value="NEW">New</option>
+                  <option value="GOOD">Good</option>
+                  <option value="FAIR">Fair</option>
+                  <option value="DAMAGED">Damaged</option>
+                  <option value="SCRAPPED">Scrapped</option>
                 </select>
               </div>
 
-              {/* Shared Resource Check */}
               <div className="flex items-center gap-2 pt-5">
                 <input
                   type="checkbox"
@@ -510,7 +496,6 @@ export const AssetDirectory: React.FC = () => {
                 </label>
               </div>
 
-              {/* DYNAMIC FIELD RENDERING based on selected Category */}
               {activeCategory && activeCategory.customFields.length > 0 && (
                 <div className="col-span-full border-t border-border/50 pt-4 mt-2 space-y-3">
                   <h4 className="text-[11px] font-bold text-primary tracking-wide uppercase">
@@ -533,7 +518,6 @@ export const AssetDirectory: React.FC = () => {
                 </div>
               )}
 
-              {/* Action Buttons */}
               <div className="col-span-full pt-4 border-t border-border/50 flex justify-end gap-2">
                 <button
                   type="button"
@@ -554,11 +538,9 @@ export const AssetDirectory: React.FC = () => {
         </div>
       )}
 
-      {/* --- DETAILED SLIDE-OVER PROFILE PANEL --- */}
       {selectedAsset && (
         <div className="fixed inset-y-0 right-0 z-50 w-full sm:max-w-md bg-card border-l border-border shadow-2xl p-6 overflow-y-auto animate-in slide-in-from-right duration-200 flex flex-col justify-between">
           <div className="space-y-6">
-            {/* Slide Header */}
             <div className="flex justify-between items-center pb-3 border-b border-border">
               <div className="flex items-center gap-2">
                 <span className="text-[9px] font-black text-primary bg-primary/10 border border-primary/20 px-2 py-0.5 rounded">
@@ -574,11 +556,8 @@ export const AssetDirectory: React.FC = () => {
               </button>
             </div>
 
-            {/* Simulated QR Code & Core info */}
             <div className="flex gap-4 items-center bg-accent/10 p-4 rounded-2xl border border-border/40">
-              {/* Custom Drawing of simulated QR code block */}
               <div className="w-16 h-16 bg-white rounded-lg p-1 shrink-0 flex flex-col justify-between relative shadow-lg shadow-white/5">
-                {/* QR grid pattern */}
                 <div className="grid grid-cols-4 gap-0.5 h-full w-full">
                   <div className="bg-black rounded-sm"></div>
                   <div className="bg-black rounded-sm"></div>
@@ -600,7 +579,6 @@ export const AssetDirectory: React.FC = () => {
                   <div className="bg-white"></div>
                   <div className="bg-black rounded-sm"></div>
                 </div>
-                {/* Micro logo overlay in QR center */}
                 <span className="absolute inset-0 m-auto w-4 h-4 bg-primary text-primary-foreground text-[8px] font-extrabold flex items-center justify-center rounded-sm">
                   AF
                 </span>
@@ -612,7 +590,6 @@ export const AssetDirectory: React.FC = () => {
               </div>
             </div>
 
-            {/* Key Information details list */}
             <div className="space-y-3.5 text-xs">
               <div className="grid grid-cols-2 py-1.5 border-b border-border/20">
                 <span className="text-muted-foreground">Lifecycle State</span>
@@ -631,7 +608,6 @@ export const AssetDirectory: React.FC = () => {
                 <span className="font-semibold text-foreground text-right">{selectedAsset.isBookable ? 'Yes' : 'No'}</span>
               </div>
 
-              {/* Render dynamic meta parameters */}
               {selectedAsset.meta && Object.keys(selectedAsset.meta).length > 0 && (
                 <div className="pt-2">
                   <h4 className="text-[10px] font-bold text-primary tracking-wide uppercase mb-2">Category-Specific Meta</h4>
@@ -647,14 +623,12 @@ export const AssetDirectory: React.FC = () => {
               )}
             </div>
 
-            {/* History logs & timeline */}
             <div className="space-y-4 pt-4 border-t border-border">
               <h4 className="text-xs font-bold text-foreground flex items-center gap-1.5">
                 <Clock size={14} className="text-primary" />
                 <span>Asset History Timeline</span>
               </h4>
 
-              {/* Show allocation details */}
               <div className="space-y-3 max-h-48 overflow-y-auto pr-1">
                 <p className="text-[10px] text-muted-foreground font-bold tracking-wider uppercase">Allocations</p>
                 {selectedAssetAllocations.length === 0 ? (
@@ -675,7 +649,6 @@ export const AssetDirectory: React.FC = () => {
                 )}
               </div>
 
-              {/* Show maintenance details */}
               <div className="space-y-3 max-h-48 overflow-y-auto pr-1">
                 <p className="text-[10px] text-muted-foreground font-bold tracking-wider uppercase flex items-center gap-1">
                   <Wrench size={10} />
@@ -699,7 +672,6 @@ export const AssetDirectory: React.FC = () => {
             </div>
           </div>
 
-          {/* Close Panel Button */}
           <button
             onClick={() => setSelectedAsset(null)}
             className="w-full mt-6 py-2.5 bg-accent hover:bg-accent/70 text-foreground text-xs font-bold rounded-xl"
