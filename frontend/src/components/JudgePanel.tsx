@@ -2,29 +2,59 @@ import React, { useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../store';
 import { overrideActiveRole, setCredentials, type UserRole } from '../store/authSlice';
 import { addNotification } from '../store/notificationSlice';
-import { resetToSIHMockData } from '../utils/mockDb';
+import api from '../utils/api';
 import { Wrench, Shield, Users, Calendar, FastForward, BellRing, Settings, Sparkles } from 'lucide-react';
 
 export const JudgePanel: React.FC = () => {
   const dispatch = useAppDispatch();
   const { isAuthenticated, activeRole } = useAppSelector((state) => state.auth);
   const [isOpen, setIsOpen] = useState(false);
+  const [seedStatus, setSeedStatus] = useState<string | null>(null);
 
-  const handleSIHReset = () => {
-    resetToSIHMockData();
-    dispatch(
-      setCredentials({
-        user: {
-          id: 'emp-1',
-          name: 'Alice Chen',
-          email: 'admin@assetflow.com',
-          role: 'ADMIN',
-          status: 'active',
-        },
-        token: 'mock-jwt-token-for-judges',
-      })
-    );
-    window.location.reload();
+  const handleSIHReset = async () => {
+    setSeedStatus('Seeding demo users into backend...');
+
+    const demoUsers = [
+      { name: 'Alice Chen', email: 'admin@assetflow.com', password: 'password' },
+      { name: 'Sarah Connor', email: 'manager@assetflow.com', password: 'password' },
+      { name: 'Priya Sharma', email: 'priya@assetflow.com', password: 'password' },
+      { name: 'Raj Patel', email: 'raj@assetflow.com', password: 'password' },
+    ];
+
+    for (const u of demoUsers) {
+      try {
+        await api.post('/users/signup', u);
+      } catch {
+        // User may already exist — ignore conflict errors
+      }
+    }
+
+    setSeedStatus('Users seeded. Logging in as Admin...');
+
+    try {
+      const res = await api.post('/users/login', {
+        email: 'admin@assetflow.com',
+        password: 'password',
+      });
+      const { accessToken, user: userData } = res.data;
+      dispatch(
+        setCredentials({
+          user: {
+            id: userData.id,
+            name: userData.name,
+            email: userData.email,
+            role: userData.role.toUpperCase().replace('DEPARTMENT_HEAD', 'DEPT_HEAD') as UserRole,
+            status: userData.status,
+          },
+          token: accessToken,
+        })
+      );
+      setSeedStatus('Done! Admin session active.');
+      setTimeout(() => setSeedStatus(null), 2000);
+    } catch {
+      setSeedStatus('Backend unavailable. Start the server first.');
+      setTimeout(() => setSeedStatus(null), 3000);
+    }
   };
 
   // Mock accounts mapping to the seeded database profiles
@@ -35,20 +65,40 @@ export const JudgePanel: React.FC = () => {
     { name: 'Raj (Employee)', email: 'raj@assetflow.com', role: 'EMPLOYEE' as UserRole },
   ];
 
-  const handleQuickLogin = (email: string, role: UserRole, name: string) => {
-    // Dispatch credentials directly to Redux store (bypasses network for instant presentation)
-    dispatch(
-      setCredentials({
-        user: {
-          id: `seed-${role.toLowerCase()}`,
-          name,
-          email,
-          role,
-          status: 'active',
-        },
-        token: 'mock-jwt-token-for-judges',
-      })
-    );
+  const handleQuickLogin = async (email: string, role: UserRole, name: string) => {
+    try {
+      const res = await api.post('/users/login', {
+        email,
+        password: 'password',
+      });
+      const { accessToken, user: userData } = res.data;
+      dispatch(
+        setCredentials({
+          user: {
+            id: userData.id,
+            name: userData.name,
+            email: userData.email,
+            role: userData.role.toUpperCase().replace('DEPARTMENT_HEAD', 'DEPT_HEAD') as UserRole,
+            status: userData.status,
+          },
+          token: accessToken,
+        })
+      );
+    } catch {
+      // Fallback: if backend is not running, use mock credentials for demo
+      dispatch(
+        setCredentials({
+          user: {
+            id: `seed-${role.toLowerCase()}`,
+            name,
+            email,
+            role,
+            status: 'active',
+          },
+          token: 'mock-jwt-token-for-judges',
+        })
+      );
+    }
   };
 
   const handleRoleOverride = (role: UserRole) => {
@@ -145,8 +195,11 @@ export const JudgePanel: React.FC = () => {
               <span>SIH Presentation Seeder</span>
             </h4>
             <p className="text-[9px] text-muted-foreground leading-relaxed">
-              Populate active transfer overrides, scheduled repair orders, and overdue alerts.
+              Seed demo users into the backend database and login as Admin.
             </p>
+            {seedStatus && (
+              <p className="text-[9px] font-bold text-primary">{seedStatus}</p>
+            )}
             <button
               onClick={handleSIHReset}
               className="w-full py-2 bg-primary hover:bg-primary/95 text-primary-foreground font-black text-[10px] uppercase tracking-wider rounded-lg shadow-lg shadow-primary/25 transition-all"
