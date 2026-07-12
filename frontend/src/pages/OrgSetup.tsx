@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getDbTable, saveDbTable, type MockDepartment, type MockCategory, type MockUser } from '../utils/mockDb';
+import api from '../utils/api';
 import { 
   Building2, 
   FolderLock, 
@@ -9,15 +9,37 @@ import {
   AlertCircle 
 } from 'lucide-react';
 
+interface Department {
+  id: string;
+  name: string;
+  headId?: string;
+  parentId?: string;
+  status: 'active' | 'inactive';
+}
+
+interface Category {
+  id: string;
+  name: string;
+  customFields: string[];
+  status: 'active' | 'inactive';
+}
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: 'ADMIN' | 'ASSET_MANAGER' | 'DEPARTMENT_HEAD' | 'EMPLOYEE';
+  departmentId?: string;
+  status: 'active' | 'inactive';
+}
+
 export const OrgSetup: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'depts' | 'categories' | 'directory'>('depts');
 
-  // Database states
-  const [departments, setDepartments] = useState<MockDepartment[]>([]);
-  const [categories, setCategories] = useState<MockCategory[]>([]);
-  const [users, setUsers] = useState<MockUser[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
 
-  // Feedback states
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -31,11 +53,18 @@ export const OrgSetup: React.FC = () => {
   const [customFieldName, setCustomFieldName] = useState('');
   const [customFieldsList, setCustomFieldsList] = useState<string[]>([]);
 
-  // Load database tables
   const loadTables = () => {
-    setDepartments(getDbTable<MockDepartment>('af_departments'));
-    setCategories(getDbTable<MockCategory>('af_categories'));
-    setUsers(getDbTable<MockUser>('af_users'));
+    api.get<Department[]>('/departments')
+      .then(res => setDepartments(res.data))
+      .catch(() => setError('Failed to load departments.'));
+
+    api.get<Category[]>('/categories')
+      .then(res => setCategories(res.data))
+      .catch(() => setError('Failed to load categories.'));
+
+    api.get<User[]>('/users/directory')
+      .then(res => setUsers(res.data))
+      .catch(() => setError('Failed to load users.'));
   };
 
   useEffect(() => {
@@ -57,21 +86,19 @@ export const OrgSetup: React.FC = () => {
       return;
     }
 
-    const newDept: MockDepartment = {
-      id: `dept-${Date.now().toString().slice(-4)}`,
+    api.post('/departments', {
       name: deptName.trim(),
       headId: deptHeadId || undefined,
       parentId: deptParentId || undefined,
-      status: 'active',
-    };
-
-    const updated = [...departments, newDept];
-    saveDbTable('af_departments', updated);
-    setSuccess(`Department "${deptName}" created successfully.`);
-    setDeptName('');
-    setDeptHeadId('');
-    setDeptParentId('');
-    loadTables();
+    })
+      .then(() => {
+        setSuccess(`Department "${deptName}" created successfully.`);
+        setDeptName('');
+        setDeptHeadId('');
+        setDeptParentId('');
+        loadTables();
+      })
+      .catch(() => setError('Failed to create department.'));
   };
 
   // --- TAB B: Category Logic ---
@@ -98,41 +125,29 @@ export const OrgSetup: React.FC = () => {
       return;
     }
 
-    // Check unique category
-    if (categories.some(c => c.name.toLowerCase() === catName.trim().toLowerCase())) {
-      setError('A category with this name already exists.');
-      return;
-    }
-
-    const newCat: MockCategory = {
-      id: `cat-${Date.now().toString().slice(-4)}`,
+    api.post('/categories', {
       name: catName.trim(),
       customFields: customFieldsList,
-      status: 'active',
-    };
-
-    const updated = [...categories, newCat];
-    saveDbTable('af_categories', updated);
-    setSuccess(`Category "${catName}" added.`);
-    setCatName('');
-    setCustomFieldsList([]);
-    loadTables();
+    })
+      .then(() => {
+        setSuccess(`Category "${catName}" added.`);
+        setCatName('');
+        setCustomFieldsList([]);
+        loadTables();
+      })
+      .catch(() => setError('Failed to create category.'));
   };
 
   // --- TAB C: Directory promotions ---
-  const handlePromoteRole = (userId: string, newRole: 'DEPT_HEAD' | 'ASSET_MANAGER' | 'EMPLOYEE') => {
+  const handlePromoteRole = (userId: string, newRole: 'DEPARTMENT_HEAD' | 'ASSET_MANAGER' | 'EMPLOYEE') => {
     clearFeedbacks();
 
-    const updated = users.map(u => {
-      if (u.id === userId) {
-        return { ...u, role: newRole };
-      }
-      return u;
-    });
-
-    saveDbTable('af_users', updated);
-    setSuccess(`Role updated successfully.`);
-    loadTables();
+    api.post('/users/promote', { userId, role: newRole })
+      .then(() => {
+        setSuccess(`Role updated successfully.`);
+        loadTables();
+      })
+      .catch(() => setError('Failed to update role.'));
   };
 
   return (
@@ -436,7 +451,7 @@ export const OrgSetup: React.FC = () => {
                           ? 'bg-red-500/10 text-red-400 border border-red-500/20' 
                           : u.role === 'ASSET_MANAGER' 
                           ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
-                          : u.role === 'DEPT_HEAD'
+                          : u.role === 'DEPARTMENT_HEAD'
                           ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
                           : 'bg-muted/30 text-muted-foreground border border-border/40'
                       }`}>
@@ -444,7 +459,6 @@ export const OrgSetup: React.FC = () => {
                       </span>
                     </td>
                     <td className="py-3.5 text-right">
-                      {/* Only render promotion controls for non-admin accounts to prevent admin lockouts */}
                       {u.role !== 'ADMIN' ? (
                         <div className="inline-flex gap-1.5">
                           <button
@@ -458,9 +472,9 @@ export const OrgSetup: React.FC = () => {
                             Employee
                           </button>
                           <button
-                            onClick={() => handlePromoteRole(u.id, 'DEPT_HEAD')}
+                            onClick={() => handlePromoteRole(u.id, 'DEPARTMENT_HEAD')}
                             className={`px-2 py-1.5 rounded-lg border text-[10px] font-bold transition-all ${
-                              u.role === 'DEPT_HEAD'
+                              u.role === 'DEPARTMENT_HEAD'
                                 ? 'bg-amber-500/20 text-amber-400 border-amber-500/40'
                                 : 'bg-accent/15 border-border/40 hover:bg-accent/30 text-muted-foreground'
                             }`}
