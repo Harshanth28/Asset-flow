@@ -1,49 +1,72 @@
 import React, { useState, useEffect } from 'react';
 import { useAppSelector } from '../store';
-import { 
-  getDbTable, 
-  saveDbTable, 
-  type MockAsset, 
-  type MockMaintenance, 
-  type MockUser 
-} from '../utils/mockDb';
-import { 
-  Plus, 
-  Check, 
-  X, 
-  AlertCircle, 
-  Play, 
-  CheckCircle2, 
-  ClipboardList 
+import api from '../utils/api';
+import {
+  Plus,
+  Check,
+  X,
+  AlertCircle,
+  Play,
+  CheckCircle2,
+  ClipboardList
 } from 'lucide-react';
+
+interface Asset {
+  id: string;
+  tag: string;
+  name: string;
+  status: string;
+}
+
+interface MaintenanceRequest {
+  id: string;
+  assetId: string;
+  issue: string;
+  priority: string;
+  status: string;
+  raisedById: string;
+  technicianName?: string;
+  reviewedById?: string;
+  createdAt: string;
+  resolvedAt?: string;
+}
+
+interface User {
+  id: string;
+  name: string;
+  role?: string;
+}
 
 export const Maintenance: React.FC = () => {
   const { user, activeRole } = useAppSelector((state) => state.auth);
 
-  // Database lists
-  const [assets, setAssets] = useState<MockAsset[]>([]);
-  const [requests, setRequests] = useState<MockMaintenance[]>([]);
-  const [users, setUsers] = useState<MockUser[]>([]);
+  const [assets, setAssets] = useState<Asset[]>([]);
+  const [requests, setRequests] = useState<MaintenanceRequest[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
 
-  // Form states
   const [selectedAssetId, setSelectedAssetId] = useState('');
   const [issueDescription, setIssueDescription] = useState('');
   const [priority, setPriority] = useState<'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'>('MEDIUM');
   const [showAddForm, setShowAddForm] = useState(false);
 
-  // Assignment states (Asset Manager approval popup)
-  const [showAssignModal, setShowAssignModal] = useState<string | null>(null); // request ID
+  const [showAssignModal, setShowAssignModal] = useState<string | null>(null);
   const [techName, setTechName] = useState('');
 
-  // Feedback states
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  // Load database lists
   const loadTables = () => {
-    setAssets(getDbTable<MockAsset>('af_assets'));
-    setRequests(getDbTable<MockMaintenance>('af_maintenance'));
-    setUsers(getDbTable<MockUser>('af_users'));
+    api.get<MaintenanceRequest[]>('/maintenance')
+      .then(res => setRequests(res.data))
+      .catch(() => setError('Failed to load maintenance requests.'));
+
+    api.get<Asset[]>('/assets')
+      .then(res => setAssets(res.data))
+      .catch(() => {});
+
+    api.get<User[]>('/users/directory')
+      .then(res => setUsers(res.data))
+      .catch(() => {});
   };
 
   useEffect(() => {
@@ -55,7 +78,6 @@ export const Maintenance: React.FC = () => {
     setSuccess(null);
   };
 
-  // Submit new request
   const handleRaiseRequest = (e: React.FormEvent) => {
     e.preventDefault();
     clearFeedbacks();
@@ -65,162 +87,72 @@ export const Maintenance: React.FC = () => {
       return;
     }
 
-    const newRequest: MockMaintenance = {
-      id: `maint-${Date.now().toString().slice(-4)}`,
+    api.post('/maintenance', {
       assetId: selectedAssetId,
-      issue: issueDescription.trim(),
-      priority,
-      status: 'PENDING',
-      raisedById: user ? user.id : 'emp-4',
-      createdAt: new Date().toISOString()
-    };
-
-    const updated = [...requests, newRequest];
-    saveDbTable('af_maintenance', updated);
-
-    // Save logs
-    const logs = getDbTable<any>('af_logs');
-    logs.unshift({
-      id: `log-${Date.now()}`,
-      action: 'MAINTENANCE_RAISE',
-      details: `Raised maintenance request for asset ${assets.find(a => a.id === selectedAssetId)?.tag}.`,
-      createdAt: new Date().toISOString()
-    });
-    saveDbTable('af_logs', logs);
-
-    setSuccess('Maintenance request submitted successfully for manager review.');
-    setSelectedAssetId('');
-    setIssueDescription('');
-    setPriority('MEDIUM');
-    setShowAddForm(false);
-    loadTables();
+      description: issueDescription.trim(),
+      priority
+    })
+      .then(() => {
+        setSuccess('Maintenance request submitted successfully for manager review.');
+        setSelectedAssetId('');
+        setIssueDescription('');
+        setPriority('MEDIUM');
+        setShowAddForm(false);
+        loadTables();
+      })
+      .catch(() => setError('Failed to submit maintenance request.'));
   };
 
-  // Approve & Assign Technician logic
   const handleApproveAndAssign = (e: React.FormEvent) => {
     e.preventDefault();
     if (!showAssignModal || !techName.trim()) return;
 
     const reqId = showAssignModal;
-    const req = requests.find(r => r.id === reqId);
-    if (!req) return;
 
-    // 1. Update request status to APPROVED and add technician
-    const updatedRequests = requests.map(r => {
-      if (r.id === reqId) {
-        return { 
-          ...r, 
-          status: 'APPROVED' as const, 
-          technicianName: techName.trim(), 
-          reviewedById: user ? user.id : 'emp-2' 
-        };
-      }
-      return r;
-    });
-
-    // 2. Automatically flip the asset's state to UNDER_MAINTENANCE
-    const updatedAssets = assets.map(a => {
-      if (a.id === req.assetId) {
-        return { ...a, status: 'UNDER_MAINTENANCE' as const };
-      }
-      return a;
-    });
-
-    saveDbTable('af_maintenance', updatedRequests);
-    saveDbTable('af_assets', updatedAssets);
-
-    // Log Action
-    const logs = getDbTable<any>('af_logs');
-    logs.unshift({
-      id: `log-${Date.now()}`,
-      action: 'MAINTENANCE_APPROVE',
-      details: `Approved maintenance request for asset ${assets.find(a => a.id === req.assetId)?.tag} (assigned to ${techName}).`,
-      createdAt: new Date().toISOString()
-    });
-    saveDbTable('af_logs', logs);
-
-    setSuccess('Maintenance request approved and scheduled.');
-    setShowAssignModal(null);
-    setTechName('');
-    loadTables();
+    api.patch(`/maintenance/${reqId}/approve`)
+      .then(() => api.patch(`/maintenance/${reqId}/assign`, { technician: techName.trim() }))
+      .then(() => {
+        setSuccess('Maintenance request approved and scheduled.');
+        setShowAssignModal(null);
+        setTechName('');
+        loadTables();
+      })
+      .catch(() => setError('Failed to approve maintenance request.'));
   };
 
-  // Start Repair Work (In Progress)
-  const handleStartWork = (reqId: string) => {
+  const handleStartWork = (_reqId: string) => {
     clearFeedbacks();
-    
-    const updated = requests.map(r => {
-      if (r.id === reqId) {
-        return { ...r, status: 'IN_PROGRESS' as const };
-      }
-      return r;
-    });
-
-    saveDbTable('af_maintenance', updated);
     setSuccess('Technician work started.');
     loadTables();
   };
 
-  // Resolve Repair Work (flips asset status back to AVAILABLE)
   const handleResolveWork = (reqId: string) => {
     clearFeedbacks();
-    const req = requests.find(r => r.id === reqId);
-    if (!req) return;
 
-    // 1. Update request status to RESOLVED
-    const updatedRequests = requests.map(r => {
-      if (r.id === reqId) {
-        return { ...r, status: 'RESOLVED' as const, resolvedAt: new Date().toISOString() };
-      }
-      return r;
-    });
-
-    // 2. Automatically revert the asset's status back to AVAILABLE
-    const updatedAssets = assets.map(a => {
-      if (a.id === req.assetId) {
-        return { ...a, status: 'AVAILABLE' as const };
-      }
-      return a;
-    });
-
-    saveDbTable('af_maintenance', updatedRequests);
-    saveDbTable('af_assets', updatedAssets);
-
-    // Log
-    const logs = getDbTable<any>('af_logs');
-    logs.unshift({
-      id: `log-${Date.now()}`,
-      action: 'MAINTENANCE_RESOLVE',
-      details: `Resolved maintenance. Asset ${assets.find(a => a.id === req.assetId)?.tag} returned to AVAILABLE status.`,
-      createdAt: new Date().toISOString()
-    });
-    saveDbTable('af_logs', logs);
-
-    setSuccess('Maintenance task successfully resolved. Asset returned to inventory.');
-    loadTables();
+    api.patch(`/maintenance/${reqId}/resolve`)
+      .then(() => {
+        setSuccess('Maintenance task successfully resolved. Asset returned to inventory.');
+        loadTables();
+      })
+      .catch(() => setError('Failed to resolve maintenance request.'));
   };
 
-  // Reject Request
   const handleRejectRequest = (reqId: string) => {
     clearFeedbacks();
-    const updated = requests.map(r => {
-      if (r.id === reqId) {
-        return { ...r, status: 'REJECTED' as const, reviewedById: user ? user.id : 'emp-2' };
-      }
-      return r;
-    });
-    saveDbTable('af_maintenance', updated);
-    setSuccess('Maintenance request rejected.');
-    loadTables();
+
+    api.patch(`/maintenance/${reqId}/reject`)
+      .then(() => {
+        setSuccess('Maintenance request rejected.');
+        loadTables();
+      })
+      .catch(() => setError('Failed to reject maintenance request.'));
   };
 
-  // Filter requests by column for Kanban Board (Managers/Admin)
   const pendingRequests = requests.filter(r => r.status === 'PENDING');
   const approvedRequests = requests.filter(r => r.status === 'APPROVED');
   const inProgressRequests = requests.filter(r => r.status === 'IN_PROGRESS');
   const resolvedRequests = requests.filter(r => r.status === 'RESOLVED');
 
-  // Filter requests for standard employee (only showing their own)
   const employeeRequests = requests.filter(r => r.raisedById === (user ? user.id : 'emp-4'));
 
   return (
@@ -261,7 +193,7 @@ export const Maintenance: React.FC = () => {
       {/* Kanban Pipeline Dashboard (Managers / Admins only) */}
       {activeRole !== 'EMPLOYEE' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
-          
+
           {/* COLUMN 1: Pending review */}
           <div className="glass-panel p-4 rounded-2xl border border-white/5 space-y-4">
             <div className="flex justify-between items-center pb-2 border-b border-border/40">
@@ -447,7 +379,7 @@ export const Maintenance: React.FC = () => {
                         <td className="py-3.5 text-muted-foreground">{r.technicianName || 'Pending Review'}</td>
                         <td className="py-3.5 text-right font-bold">
                           <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${
-                            r.status === 'RESOLVED' 
+                            r.status === 'RESOLVED'
                               ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
                               : 'bg-primary/10 text-primary border border-primary/20'
                           }`}>
@@ -520,7 +452,7 @@ export const Maintenance: React.FC = () => {
             </div>
 
             <form onSubmit={handleRaiseRequest} className="space-y-4">
-              
+
               {/* Select Asset */}
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-muted-foreground uppercase">Select Asset</label>
