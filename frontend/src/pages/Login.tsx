@@ -25,7 +25,6 @@ const Login: React.FC = () => {
   const {
     register,
     handleSubmit,
-    setValue,
     formState: { errors },
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
@@ -65,11 +64,6 @@ const Login: React.FC = () => {
     }
   };
 
-  // Helper function to auto-fill fields for presentation judges
-  const fillCredentials = (email: string) => {
-    setValue('email', email);
-    setValue('password', 'password');
-  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col justify-center items-center px-4 relative overflow-hidden">
@@ -174,38 +168,7 @@ const Login: React.FC = () => {
           </p>
         </div>
 
-        {/* Demo Fast-login Links for Judges - Visual Muted treatment */}
-        <div className="p-4 rounded-xl border border-dashed border-slate-200/80 bg-slate-100/40 space-y-2 opacity-80 hover:opacity-100 transition-opacity mt-4">
-          <p className="text-[9px] text-muted-foreground font-black tracking-wider uppercase text-center">
-            🔧 Demo Reviewer Presets (Click to fill)
-          </p>
-          <div className="grid grid-cols-2 gap-1.5">
-            <button
-              onClick={() => fillCredentials('admin@assetflow.com')}
-              className="px-2 py-1 bg-accent/25 hover:bg-accent/50 border border-border/40 text-center rounded text-[10px] font-semibold transition-all truncate"
-            >
-              🔑 Admin
-            </button>
-            <button
-              onClick={() => fillCredentials('manager@assetflow.com')}
-              className="px-2 py-1 bg-accent/25 hover:bg-accent/50 border border-border/40 text-center rounded text-[10px] font-semibold transition-all truncate"
-            >
-              🔑 Asset Manager
-            </button>
-            <button
-              onClick={() => fillCredentials('priya@assetflow.com')}
-              className="px-2 py-1 bg-accent/25 hover:bg-accent/50 border border-border/40 text-center rounded text-[10px] font-semibold transition-all truncate"
-            >
-              🔑 Dept Head
-            </button>
-            <button
-              onClick={() => fillCredentials('raj@assetflow.com')}
-              className="px-2 py-1 bg-accent/25 hover:bg-accent/50 border border-border/40 text-center rounded text-[10px] font-semibold transition-all truncate"
-            >
-              🔑 Employee
-            </button>
-          </div>
-        </div>
+
       </div>
     </div>
   );
