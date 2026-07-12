@@ -1,2 +1,29 @@
 .DS_Store
 backend_backup/
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+.vercel/
+
+# Environment files (contain secrets)
+.env
+.env.local
+.env.*.local
+
+# Prisma
+backend/prisma/dev.db
+backend/prisma/dev.db-journal
+
+# Logs
+*.log
+npm-debug.log*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
