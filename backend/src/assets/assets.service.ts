@@ -55,9 +55,9 @@ export class AssetsService {
 
     if (filters.search) {
       whereClause.OR = [
-        { name: { contains: filters.search } },
-        { tag: { contains: filters.search } },
-        { serialNumber: { contains: filters.search } },
+        { name: { contains: filters.search, mode: 'insensitive' } },
+        { tag: { contains: filters.search, mode: 'insensitive' } },
+        { serialNumber: { contains: filters.search, mode: 'insensitive' } },
       ];
     }
 
@@ -72,6 +72,7 @@ export class AssetsService {
     if (filters.location) {
       whereClause.location = {
         contains: filters.location,
+        mode: 'insensitive',
       };
     }
 
